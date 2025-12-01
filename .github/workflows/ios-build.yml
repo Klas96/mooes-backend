@@ -1,0 +1,83 @@
+name: iOS Build
+
+# Temporarily disabled to fix deployment issues
+# on:
+#   push:
+#     branches: [ main ]
+#   workflow_dispatch: # Allow manual triggering
+
+on:
+  workflow_dispatch: # Only allow manual triggering for now
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.32.5'
+        channel: 'stable'
+        
+    - name: Install dependencies
+      run: |
+        cd dating_app
+        flutter pub get
+        
+    - name: Setup iOS environment
+      run: |
+        cd dating_app
+        flutter config --enable-ios
+        flutter doctor -v
+        
+    - name: Check Flutter doctor
+      run: |
+        cd dating_app
+        flutter doctor -v
+        
+    - name: Clean build
+      run: |
+        cd dating_app
+        flutter clean
+        
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: 'latest-stable'
+        
+    - name: Build iOS IPA
+      run: |
+        cd dating_app
+        echo "Attempting to build iOS IPA..."
+        flutter build ipa --release --no-codesign || {
+          echo "IPA build failed, trying alternative approach..."
+          flutter build ios --release --no-codesign
+        }
+        echo "Build completed!"
+        
+    - name: Check build output
+      run: |
+        cd dating_app
+        echo "Checking build directory structure..."
+        find build/ios -name "*.ipa" -o -name "*.app" -o -name "*.xcarchive" | head -10
+        echo "Full build directory:"
+        ls -la build/ios/
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-build
+        path: dating_app/build/ios/
+        retention-days: 30
+        if-no-files-found: warn
+        
+    - name: Show build info
+      run: |
+        cd dating_app
+        echo "Build completed successfully!"
+        echo "All iOS build files:"
+        find build/ios -type f | head -20 

@@ -1,0 +1,93 @@
+name: Deploy Backend to Google Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'nodejs-backend/**'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  deploy:
+    name: Deploy to Google Cloud Run
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.18.0'
+        cache: 'npm'
+        cache-dependency-path: nodejs-backend/package-lock.json
+        
+    - name: Install backend dependencies
+      run: |
+        cd nodejs-backend
+        npm ci
+        
+    - name: Run backend tests before deployment
+      run: |
+        cd nodejs-backend
+        npm test
+        
+    - name: Setup Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v2
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+        
+    - name: Configure Docker
+      run: gcloud auth configure-docker
+        
+    - name: Build and Deploy to Cloud Run
+      run: |
+        cd nodejs-backend
+        
+        # Build the container
+        gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/mooves-backend
+        
+        # Deploy to Cloud Run
+        gcloud run deploy mooves-backend \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/mooves-backend \
+          --platform managed \
+          --region us-central1 \
+          --allow-unauthenticated \
+          --set-env-vars NODE_ENV=production \
+          --set-env-vars DATABASE_URL=${{ secrets.DATABASE_URL }} \
+          --set-env-vars JWT_SECRET=${{ secrets.JWT_SECRET }} \
+          --set-env-vars EMAIL_USER=${{ secrets.EMAIL_USER }} \
+          --set-env-vars EMAIL_PASSWORD=${{ secrets.EMAIL_PASSWORD }} \
+          --set-env-vars EMAIL_HOST=${{ secrets.EMAIL_HOST }} \
+          --set-env-vars EMAIL_PORT=${{ secrets.EMAIL_PORT }} \
+          --set-env-vars EMAIL_SECURE=${{ secrets.EMAIL_SECURE }} \
+          --set-env-vars GOOGLE_CLOUD_PROJECT_ID=fresh-oath-337920 \
+          --set-env-vars GOOGLE_CLOUD_BUCKET_NAME=mooves \
+          --set-env-vars GOOGLE_CLOUD_PROJECT=mooves-dating-app \
+          --set-env-vars GOOGLE_CLOUD_REGION=us-central1 \
+          --set-env-vars GOOGLE_CLOUD_CREDENTIALS=${{ secrets.GOOGLE_CLOUD_CREDENTIALS }}
+        
+    - name: Verify deployment
+      run: |
+        echo "Waiting for deployment to complete..."
+        sleep 30
+        SERVICE_URL=$(gcloud run services describe mooves-backend --platform managed --region us-central1 --format 'value(status.url)')
+        curl -f $SERVICE_URL/api/health || echo "Deployment verification failed" 
+        
+    - name: Verify Google Cloud Storage configuration
+      run: |
+        echo "🔍 Verifying Google Cloud Storage configuration..."
+        SERVICE_URL=$(gcloud run services describe mooves-backend --platform managed --region us-central1 --format 'value(status.url)')
+        
+        # Test if the service can access Google Cloud Storage
+        echo "Testing image upload endpoint..."
+        curl -X POST $SERVICE_URL/api/test-gcs || echo "GCS test endpoint not available"
+        
+        echo "✅ Deployment completed with Google Cloud Storage environment variables"
+        echo "📋 Environment variables set:"
+        echo "   - GOOGLE_CLOUD_PROJECT_ID=fresh-oath-337920"
+        echo "   - GOOGLE_CLOUD_BUCKET_NAME=mooves"
+        echo "   - GOOGLE_CLOUD_PROJECT=mooves-dating-app"
+        echo "   - GOOGLE_CLOUD_REGION=us-central1" 

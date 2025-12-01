@@ -1,0 +1,5 @@
+34603a3826a6d6709438aefefa76e2bed23b8121,MODIFY,regular-file,docs/backend/IMAGE_STORAGE_TROUBLESHOOTING.md,6885,82
+f510cc2a1ce7a8e348b39defad605286f6b760be,MODIFY,regular-file,docs/frontend/BILLING_IMPLEMENTATION_SUMMARY.md,9241,175
+d5569e4a472997f3d9aa08c84f54319f229899e8,MODIFY,regular-file,docs/frontend/GOOGLE_PLAY_BILLING_SETUP.md,6131,71
+bd04b381419d0c8c27d4861c3b16824b79cc537f,MODIFY,regular-file,nodejs-backend/env.example,1762,49
+944a326ad1c1b02d613a87baef2c1fadd2ab73ed,MODIFY,executable,nodejs-backend/scripts/security-cleanup.sh,6149,49

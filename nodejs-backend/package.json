@@ -1,0 +1,69 @@
+{
+  "name": "mooves-backend",
+  "version": "1.0.0",
+  "description": "Mooves backend with Node.js and Express",
+  "main": "server.js",
+  "engines": {
+    "node": "20.18.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "test": "jest --runInBand --testTimeout=60000 --forceExit",
+    "test:watch": "jest --watch --runInBand --testTimeout=60000 --forceExit",
+    "test:coverage": "jest --coverage --runInBand --testTimeout=60000 --forceExit",
+    "lint": "eslint . --ext .js",
+    "lint:fix": "eslint . --ext .js --fix",
+    "seed": "node scripts/seed-data.js",
+    "seed:enhanced": "node scripts/enhanced-seed-data.js",
+    "add-dummy-profiles": "node scripts/add-dummy-profiles.js",
+    "create-images": "node scripts/create-sample-images.js",
+    "setup": "npm run create-images && npm run seed",
+    "setup:enhanced": "npm run create-images && npm run seed:enhanced",
+    "migrate-gcloud": "node scripts/migrate-to-gcloud.js",
+    "migrate-gcloud-simple": "node scripts/migrate-to-gcloud-simple.js",
+    "test-db": "node test-db.js",
+    "reset-and-seed": "node scripts/reset-and-seed.js"
+  },
+  "keywords": [
+    "training",
+    "fitness",
+    "express",
+    "nodejs",
+    "postgresql"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "@google-cloud/storage": "^7.16.0",
+    "axios": "^1.10.0",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.41.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "express-validator": "^7.0.1",
+    "firebase-admin": "^12.0.0",
+    "googleapis": "^133.0.0",
+    "helmet": "^7.1.0",
+    "js-yaml": "^4.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "node-cron": "^3.0.3",
+    "nodemailer": "^6.9.7",
+    "openai": "^4.20.1",
+    "pg": "^8.16.2",
+    "sequelize": "^6.37.7",
+    "sequelize-cli": "^6.6.3",
+    "sharp": "^0.34.2",
+    "socket.io": "^4.7.4",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.2",
+    "sqlite3": "^5.1.7",
+    "supertest": "^6.3.4"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Mooves App Backend",
+  "description": "Backend API for the Mooves application",
+  "repository": "https://github.com/Klas96/mooves",
+  "logo": "https://storage.googleapis.com/mooves-images/logo.png",
+  "keywords": ["node", "express", "postgresql", "api", "google-cloud"],
+  "env": {
+    "NODE_ENV": {
+      "description": "Environment setting",
+      "value": "production"
+    },
+    "JWT_SECRET": {
+      "description": "Secret key for JWT tokens",
+      "generator": "secret"
+    },
+    "DATABASE_URL": {
+      "description": "PostgreSQL database URL"
+    }
+  },
+  "engines": {
+    "node": "20.18.0"
+  }
+} 

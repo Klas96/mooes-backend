@@ -1,0 +1,5 @@
+18bbc2730b40fdf2487ca2cb588136bece90c8e9,MODIFY,regular-file,GITGUARDIAN_RESOLUTION_SUMMARY.md,6029,56;60;64;68
+03ace8a1566f4197585e0afea3c8da783bed460d,MODIFY,regular-file,SECURITY_CLEANUP_PLAN.md,6668,10;16;22;28;44;51;58;65;92-95
+ec2967d8320e064b24449673a227d532b114f2a7,MODIFY,regular-file,docs/backend/SECURITY_GUIDE.md,5482,19
+944a326ad1c1b02d613a87baef2c1fadd2ab73ed,MODIFY,executable,nodejs-backend/scripts/security-cleanup.sh,6149,55
+17e6a3897ea9587cbabdbd5be767f5294ee7056c,MODIFY,executable,scripts/emergency-security-cleanup.sh,5564,68;70;73

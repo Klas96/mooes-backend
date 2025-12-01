@@ -1,0 +1,106 @@
+name: Google Play Store Deployment
+
+on:
+  push:
+    branches:
+      - 'v.*'  # Triggers on version branches like v.0.0.1, v.0.0.2, etc.
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: 'stable'
+        
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+        
+    - name: Install Android SDK 35
+      run: |
+        yes | sudo ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-35"
+        
+    - name: Install dependencies
+      run: |
+        cd dating_app
+        flutter pub get
+        
+    - name: Clean build
+      run: |
+        cd dating_app
+        flutter clean
+        
+    - name: Setup Gradle properties
+      run: |
+        cd dating_app/android
+        echo "org.gradle.jvmargs=-Xmx4096m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8" >> gradle.properties
+        echo "org.gradle.parallel=true" >> gradle.properties
+        echo "org.gradle.daemon=false" >> gradle.properties
+        
+    - name: Setup Keystore
+      run: |
+        cd dating_app/android/app
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > key.jks
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        
+    - name: Build Android App Bundle
+      run: |
+        cd dating_app
+        flutter build appbundle --release --verbose
+      env:
+        MYAPP_UPLOAD_STORE_FILE: android/app/key.jks
+        MYAPP_UPLOAD_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        MYAPP_UPLOAD_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        MYAPP_UPLOAD_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      continue-on-error: false
+        
+    - name: Upload AAB artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-aab
+        path: dating_app/build/app/outputs/bundle/release/app-release.aab
+        retention-days: 30
+        if-no-files-found: warn
+        
+    - name: Setup Google Play Console
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.0'
+        
+    - name: Install Fastlane
+      run: |
+        gem install fastlane
+        
+    - name: Deploy to Google Play Store
+      run: |
+        cd dating_app
+        fastlane deploy_to_play_store
+      env:
+        PLAY_STORE_CONFIG_JSON: ${{ secrets.PLAY_STORE_CONFIG_JSON }}
+        GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+      continue-on-error: false
+        
+    - name: Create Release
+      if: success()
+      run: |
+        # Extract version from branch name (e.g., v.0.0.2 -> 0.0.2)
+        VERSION=${GITHUB_REF#refs/heads/}
+        VERSION=${VERSION#v.}
+        
+        gh release create "v$VERSION" \
+          --title "Release v$VERSION" \
+          --notes "Automated release for version $VERSION" \
+          dating_app/build/app/outputs/bundle/release/app-release.aab
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

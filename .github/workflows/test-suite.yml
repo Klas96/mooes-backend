@@ -1,0 +1,111 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  # Flutter Tests
+  flutter-tests:
+    name: Flutter Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: 'stable'
+        
+    - name: Install Flutter dependencies
+      run: |
+        cd dating_app
+        flutter pub get
+        
+    - name: Analyze Flutter code
+      run: |
+        cd dating_app
+        flutter analyze --no-fatal-infos --no-fatal-warnings
+        
+    - name: Run Flutter unit tests
+      run: |
+        cd dating_app
+        flutter test --verbose
+        
+    - name: Upload Flutter test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: flutter-test-results
+        path: dating_app/test-results/
+        retention-days: 7
+        if-no-files-found: ignore
+
+  # Backend Tests
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.18.0'
+        cache: 'npm'
+        cache-dependency-path: nodejs-backend/package-lock.json
+        
+    - name: Install backend dependencies
+      run: |
+        cd nodejs-backend
+        npm ci
+        
+    - name: Run backend tests
+      run: |
+        cd nodejs-backend
+        npm test
+        
+    - name: Upload backend test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: backend-test-results
+        path: nodejs-backend/coverage/
+        retention-days: 7
+        if-no-files-found: ignore
+
+  # Build Verification
+  build-verification:
+    name: Build Verification
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: 'stable'
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.18.0'
+        
+    - name: Verify Flutter build
+      run: |
+        cd dating_app
+        flutter pub get
+        flutter build web
+        
+    - name: Summary
+      run: |
+        echo "✅ Build verification completed!" 

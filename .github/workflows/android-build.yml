@@ -1,0 +1,101 @@
+name: Android Build
+
+# Temporarily disabled to fix deployment issues
+# on:
+#   push:
+#     branches: [ main ]
+#   workflow_dispatch: # Allow manual triggering
+
+on:
+  workflow_dispatch: # Only allow manual triggering for now
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: 'stable'
+        
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+        
+    - name: Install Android SDK 35
+      run: |
+        yes | sudo ${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin/sdkmanager --install "platforms;android-35"
+        
+    - name: Install dependencies
+      run: |
+        cd dating_app
+        flutter pub get
+        
+    - name: Check Flutter doctor
+      run: |
+        cd dating_app
+        flutter doctor -v
+        
+    - name: Clean build
+      run: |
+        cd dating_app
+        flutter clean
+        
+    - name: Setup Gradle properties
+      run: |
+        cd dating_app/android
+        echo "org.gradle.jvmargs=-Xmx4096m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8" >> gradle.properties
+        echo "org.gradle.parallel=true" >> gradle.properties
+        echo "org.gradle.daemon=false" >> gradle.properties
+        
+    - name: Setup Keystore
+      run: |
+        cd dating_app/android/app
+        echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > key.jks
+      env:
+        KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+        
+    - name: Build Android APK
+      run: |
+        cd dating_app
+        flutter build apk --release --verbose
+      env:
+        MYAPP_UPLOAD_STORE_FILE: key.jks
+        MYAPP_UPLOAD_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        MYAPP_UPLOAD_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        MYAPP_UPLOAD_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      continue-on-error: false
+        
+    - name: Build Android App Bundle
+      run: |
+        cd dating_app
+        flutter build appbundle --release --verbose
+      env:
+        MYAPP_UPLOAD_STORE_FILE: key.jks
+        MYAPP_UPLOAD_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        MYAPP_UPLOAD_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        MYAPP_UPLOAD_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+      continue-on-error: false
+        
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-apk
+        path: dating_app/build/app/outputs/flutter-apk/app-release.apk
+        retention-days: 30
+        if-no-files-found: warn
+        
+    - name: Upload AAB artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-aab
+        path: dating_app/build/app/outputs/bundle/release/app-release.aab
+        retention-days: 30
+        if-no-files-found: warn 

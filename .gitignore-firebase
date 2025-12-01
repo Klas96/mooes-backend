@@ -1,0 +1,9 @@
+# Add these lines to your .gitignore file
+
+# Firebase credentials - NEVER commit these!
+firebase-service-account.json
+
+# Frontend Firebase config
+../mooves-frontend/android/app/google-services.json
+../mooves-frontend/ios/Runner/GoogleService-Info.plist
+

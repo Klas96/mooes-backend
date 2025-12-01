@@ -1,0 +1,240 @@
+# =============================================================================
+# Mooves Node.js Backend - .gitignore
+# =============================================================================
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json
+yarn.lock
+
+# Environment variables
+.env
+.env.*
+!.env.example
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.gcloud
+.env-config.yaml
+.enc-config.yaml
+cloudrun-env.yaml
+env-vars.yaml
+env-vars.template.yaml
+gcs-credentials.yaml
+gcs-env.yaml
+complete-env.yaml
+update-credentials.yaml
+
+# Google Cloud SQL sensitive files
+.gcloud-connection.json
+.gcloud-passwords.json
+.gcloud-connection-temp.json
+.gcloud-key.json
+cloud-sql-proxy-key.json
+connect-cloud-sql.sh
+cloud_sql_proxy
+mooves-storage-key.json
+
+# Service Accounts & Credentials
+service-account*.json
+*service-account*.json
+firebase-service-account.json
+firebase-adminsdk.json
+firebase-credentials.json
+google-services.json
+GoogleService-Info.plist
+temp-gcs-credentials.json
+temp-credentials.json
+
+# API Keys, Secrets & Credentials
+*.key
+*.pem
+*.rsa
+*.p12
+*.pfx
+*.crt
+*.cert
+*.p8
+*.mobileprovision
+*.provisionprofile
+PrivateKey*.rsa
+*credential*
+*password*
+*secret*
+*token*
+*api_key*
+*apikey*
+*private_key*
+*privatekey*
+*client_secret*
+*client_id*
+*jwt*
+*jwt_token*
+*jwt_secret*
+*oauth*
+*oauth2*
+*aws*
+*amazon*
+*azure*
+*connection_string*
+*stripe*
+*sendgrid*
+*twilio*
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+debug.log
+error.log
+phone_logs.txt
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+.nyc_output/
+.jest/
+
+# Grunt intermediate storage
+.grunt
+
+# Bower dependency directory
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons
+build/Release
+
+# Dependency directories
+jspm_packages/
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# dotenv environment variables file
+.env.test
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+build
+
+# Gatsby files
+.cache/
+public
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+*.swp
+*.swo
+*~
+
+# Backup scripts (generated during consolidation)
+scripts/backup-duplicates/
+
+# Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+:memory:
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msm
+*.msp
+*.lnk
+
+# PM2
+.pm2/
+.pm2.log
+ecosystem.config.js
+pm2.config.js
+
+# Dart (if any Dart tools are used)
+.dart_tool/
+
+# Test files with sensitive data
+test-*.js
+!__tests__/
+
+# Deployment scripts (may contain secrets)
+deploy-*.sh
+*.deploy.sh

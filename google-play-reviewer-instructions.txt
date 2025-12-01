@@ -1,0 +1,175 @@
+═══════════════════════════════════════════════════════════
+   📋 GOOGLE PLAY CONSOLE - APP ACCESS INFORMATION
+═══════════════════════════════════════════════════════════
+
+INLOGGNINGSUPPGIFTER FÖR GRANSKARE
+────────────────────────────────────────────────────────────
+
+E-postadress: playstore.reviewer@mooves.test
+Lösenord: ReviewKey2025!
+
+INSTRUKTIONER FÖR INLOGGNING
+────────────────────────────────────────────────────────────
+
+1. Öppna Mooves-appen på din Android-enhet
+2. På välkomstskärmen, tryck på "Logga in"
+3. Ange e-postadressen: playstore.reviewer@mooves.test
+4. Ange lösenordet: ReviewKey2025!
+5. Tryck på "Logga in"
+6. Du är nu inloggad och kan testa alla funktioner
+
+ALTERNATIV INLOGGNING (OM FÖRSTA METODEN INTE FUNGERAR)
+────────────────────────────────────────────────────────────
+
+Om ovanstående konto inte fungerar, använd:
+
+E-postadress: googleplay.tester@mooves.app
+Lösenord: TestKey2025!
+
+KONTOFUNKTIONER
+────────────────────────────────────────────────────────────
+
+Detta granskarkonto har följande funktioner aktiverade:
+
+✅ Verifierad e-postadress
+✅ Premium-prenumeration (1 år, automatiskt förnyad)
+✅ Komplett användarprofil med alla fält ifyllda
+✅ Obegränsade likes per dag
+✅ 100 AI-genererade meddelanden
+✅ Möjlighet att gilla genom att skicka meddelande
+✅ Global sökning (sök användare överallt)
+✅ Avancerade filter (ålder, avstånd, intressen)
+✅ Läskvitton för meddelanden
+✅ Se vem som har gillat dig
+✅ Prioriterad matchning i algoritmen
+✅ Premium-support
+
+VAD GRANSKARNA KAN TESTA
+────────────────────────────────────────────────────────────
+
+Med detta konto kan alla delar av appen testas:
+
+1. AUTENTISERING
+   - Inloggning med e-post och lösenord
+   - Sessionshantering
+   - Utloggning
+
+2. PROFIL
+   - Visa egen profil
+   - Redigera profilinformation
+   - Ladda upp profilbilder
+   - Uppdatera intressen och preferenser
+
+3. MATCHNING
+   - Bläddra bland förslag
+   - Gilla/ogilla användare
+   - Se matchningar
+   - Matchningsalgoritm
+
+4. MEDDELANDEN
+   - Skicka och ta emot meddelanden
+   - Realtidsuppdateringar
+   - Meddelandehistorik
+   - Push-notifikationer
+
+5. PREMIUM-FUNKTIONER
+   - Obegränsade likes
+   - Se vem som gillat dig
+   - Avancerade sökfilter
+   - Global sökning
+   - AI-assisterade meddelanden
+
+6. PLATSBASERADE FUNKTIONER
+   - Sök användare i närhet
+   - Avståndskalkylering
+   - Platsfilter
+
+7. INSTÄLLNINGAR
+   - Uppdatera preferenser
+   - Notifikationsinställningar
+   - Sekretesspolicy
+   - Användarvillkor
+
+TEKNISK INFORMATION
+────────────────────────────────────────────────────────────
+
+Appnamn:           Mooves
+Paketnamn:         com.mooves.app
+Kontotyp:          Premium-granskarkonto
+Server:            Produktionsserver (VPS)
+Databas:           PostgreSQL på VPS
+Premium-status:    Aktiv (1 år från skapandedatum)
+Profil:            100% komplett
+E-postverifiering: ✅ Verifierad
+Plats:             Stockholm, Sverige
+API-endpoint:      https://api.mooves.se
+
+VIKTIGA ANTECKNINGAR FÖR GRANSKARE
+────────────────────────────────────────────────────────────
+
+⚠️  INTEGRITET: Detta är ett dedikerat testkonto. Ingen personlig
+    information behöver anges av granskaren.
+
+⚠️  INNEHÅLL: Kontot kan innehålla testdata och andra testprofiler
+    för matchningstestning.
+
+⚠️  PERMANENS: Detta konto är permanent och dedikerat för Google Play
+    granskning. Det kommer inte att tas bort.
+
+⚠️  STÖD: Om det uppstår problem vid inloggning eller testning, kontakta
+    utvecklaren via Play Console messaging-systemet.
+
+FELSÖKNING
+────────────────────────────────────────────────────────────
+
+Om inloggning misslyckas:
+
+1. Kontrollera att e-postadressen är exakt: playstore.reviewer@mooves.test
+2. Kontrollera att lösenordet är exakt: ReviewKey2025!
+3. Kontrollera internetanslutning
+4. Kontakta utvecklaren för assistans
+
+KONTAKT
+────────────────────────────────────────────────────────────
+
+Vid frågor eller problem:
+- Använd Google Play Console messaging
+- Utvecklaren svarar inom 24 timmar
+
+SENAST UPPDATERAD
+────────────────────────────────────────────────────────────
+
+Datum: 2025-10-10
+Tid: 10:30 CEST
+Version: 1.0
+
+═══════════════════════════════════════════════════════════
+
+SVENSK VERSION FÖR PLAY CONSOLE-FORMULÄRET:
+
+Kopiera följande text till fältet "Inloggningsuppgifter" i 
+Google Play Console under "App access":
+
+────────────────────────────────────────────────────────────
+
+E-postadress: playstore.reviewer@mooves.test
+Lösenord: ReviewKey2025!
+
+Instruktioner:
+1. Öppna Mooves-appen
+2. Tryck på "Logga in"
+3. Använd ovanstående inloggningsuppgifter
+4. Kontot har premium-åtkomst till alla funktioner
+
+Kontot är dedikerat för granskning och har:
+- Verifierad e-post
+- Premium-prenumeration (aktiv)
+- Komplett profil
+- Tillgång till alla funktioner
+
+Om problem uppstår, kontakta utvecklaren via Play Console.
+
+────────────────────────────────────────────────────────────
+
+═══════════════════════════════════════════════════════════
+
