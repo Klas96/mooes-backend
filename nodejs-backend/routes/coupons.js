@@ -57,7 +57,9 @@ const handleValidationErrors = (req, res, next) => {
 // IMPORTANT: Specific routes must come before parameterized routes
 router.post('/', protect, createCouponValidators, handleValidationErrors, couponController.createCoupon);
 router.get('/my-coupons', protect, couponController.getUserCoupons);
+router.get('/store/my-coupons', protect, couponController.getStoreCoupons);
 router.post('/:couponId/use', protect, couponController.useCoupon);
+router.delete('/:couponId', protect, couponController.deleteCoupon);
 router.get('/:couponId', protect, couponController.getCoupon);
 
 module.exports = router;

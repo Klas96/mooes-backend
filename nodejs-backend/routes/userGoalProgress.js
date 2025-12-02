@@ -16,6 +16,8 @@ const joinGoalValidators = [
 // Protected routes
 router.post('/join', protect, joinGoalValidators, userGoalProgressController.joinGoal);
 router.get('/my-progress', protect, userGoalProgressController.getUserProgress);
+// IMPORTANT: More specific routes must come before less specific ones
+router.post('/goal/:goalId/mark-complete', protect, userGoalProgressController.markComplete);
 router.get('/goal/:goalId', protect, userGoalProgressController.getGoalProgress);
 
 module.exports = router;

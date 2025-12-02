@@ -62,6 +62,7 @@ router.get('/:goalId', storeGoalController.getGoal);
 // Protected routes (store only for creating)
 router.post('/', protect, createGoalValidators, storeGoalController.createGoal);
 router.get('/store/my-goals', protect, storeGoalController.getStoreGoals);
+router.delete('/:goalId', protect, storeGoalController.deleteGoal);
 
 module.exports = router;
 

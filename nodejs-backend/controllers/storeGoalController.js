@@ -244,11 +244,70 @@ function createStoreGoalController({ Store, StoreGoal, UserGoalProgress, User })
     }
   };
 
+  // Delete a store goal (store only)
+  const deleteGoal = async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { goalId } = req.params;
+
+      // Check if user has a store account
+      const store = await Store.findOne({
+        where: { userId, isActive: true }
+      });
+
+      if (!store) {
+        return res.status(403).json({
+          success: false,
+          message: 'You must have an active store account to delete goals'
+        });
+      }
+
+      // Find the goal and verify it belongs to this store
+      const goal = await StoreGoal.findOne({
+        where: { id: goalId, storeId: store.id }
+      });
+
+      if (!goal) {
+        return res.status(404).json({
+          success: false,
+          message: 'Goal not found or you do not have permission to delete it'
+        });
+      }
+
+      // Check if there are any participants
+      const participantCount = await UserGoalProgress.count({
+        where: { goalId: goal.id }
+      });
+
+      if (participantCount > 0) {
+        // Optionally, we could still allow deletion but warn the user
+        // For now, we'll allow deletion even with participants
+        // The CASCADE delete will handle UserGoalProgress records
+      }
+
+      // Delete the goal (CASCADE will handle related UserGoalProgress and Coupons)
+      await goal.destroy();
+
+      res.json({
+        success: true,
+        message: 'Goal deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to delete goal',
+        error: error.message
+      });
+    }
+  };
+
   return {
     getActiveGoals,
     createGoal,
     getStoreGoals,
-    getGoal
+    getGoal,
+    deleteGoal
   };
 }
 

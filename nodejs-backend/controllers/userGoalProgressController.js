@@ -218,47 +218,137 @@ function createUserGoalProgressController({ UserGoalProgress, StoreGoal, Store, 
         }
       }
 
-      // Check if goal is completed
-      let isCompleted = false;
-      if (goal.targetDistanceMeters) {
-        isCompleted = totalDistanceMeters >= goal.targetDistanceMeters;
-      } else if (goal.targetDurationMinutes) {
-        isCompleted = totalDurationMinutes >= goal.targetDurationMinutes;
-      }
-
-      // Update progress
+      // Update progress metrics only - do NOT automatically mark as completed
+      // Users will manually mark challenges as complete
       const updateData = {
         currentDistanceMeters: totalDistanceMeters,
-        currentDurationMinutes: totalDurationMinutes,
-        isCompleted
+        currentDurationMinutes: totalDurationMinutes
+        // Note: isCompleted is NOT updated automatically - user must mark it manually
       };
-
-      if (isCompleted && !progress.isCompleted) {
-        updateData.completedAt = new Date();
-        
-        // Activate coupon if not already activated
-        if (!progress.couponActivated) {
-          updateData.couponActivated = true;
-          updateData.couponActivatedAt = new Date();
-
-          // Create coupon
-          await Coupon.create({
-            userId,
-            goalId,
-            storeId: goal.storeId,
-            code: goal.couponCode,
-            description: goal.couponDescription,
-            discount: goal.couponDiscount,
-            discountAmount: goal.couponDiscountAmount,
-            isUsed: false,
-            expiresAt: goal.endDate ? new Date(goal.endDate) : null
-          });
-        }
-      }
 
       await progress.update(updateData);
     } catch (error) {
       console.error('Error updating progress:', error);
+    }
+  };
+
+  // Manually mark a goal as complete
+  const markComplete = async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { goalId } = req.params;
+
+      // Find user's progress for this goal
+      const progress = await UserGoalProgress.findOne({
+        where: { userId, goalId },
+        include: [
+          {
+            model: StoreGoal,
+            as: 'goal',
+            include: [
+              {
+                model: Store,
+                as: 'store',
+                attributes: ['id', 'storeName', 'logo', 'location']
+              }
+            ]
+          }
+        ]
+      });
+
+      if (!progress) {
+        return res.status(404).json({
+          success: false,
+          message: 'You are not participating in this goal'
+        });
+      }
+
+      // Check if goal is active
+      if (!progress.goal || !progress.goal.isActive) {
+        return res.status(400).json({
+          success: false,
+          message: 'This goal is not active'
+        });
+      }
+
+      // If already completed, return success
+      if (progress.isCompleted) {
+        return res.json({
+          success: true,
+          progress: progress.toJSON(),
+          message: 'Goal is already marked as complete'
+        });
+      }
+
+      // Mark as completed
+      const updateData = {
+        isCompleted: true,
+        completedAt: new Date()
+      };
+
+      // Activate coupon if not already activated
+      if (!progress.couponActivated) {
+        updateData.couponActivated = true;
+        updateData.couponActivatedAt = new Date();
+
+        // Create coupon
+        await Coupon.create({
+          userId,
+          goalId,
+          storeId: progress.goal.storeId,
+          code: progress.goal.couponCode,
+          description: progress.goal.couponDescription,
+          discount: progress.goal.couponDiscount,
+          discountAmount: progress.goal.couponDiscountAmount,
+          isUsed: false,
+          expiresAt: progress.goal.endDate ? new Date(progress.goal.endDate) : null
+        });
+      }
+
+      await progress.update(updateData);
+
+      // Reload progress with associations
+      await progress.reload({
+        include: [
+          {
+            model: StoreGoal,
+            as: 'goal',
+            include: [
+              {
+                model: Store,
+                as: 'store',
+                attributes: ['id', 'storeName', 'logo', 'location']
+              }
+            ]
+          }
+        ]
+      });
+
+      const progressData = progress.toJSON();
+      
+      // Calculate progress percentage
+      let progressPercent = 0;
+      if (progressData.goal && progressData.goal.targetDistanceMeters) {
+        progressPercent = Math.min(100, (progressData.currentDistanceMeters / progressData.goal.targetDistanceMeters) * 100);
+      } else if (progressData.goal && progressData.goal.targetDurationMinutes) {
+        progressPercent = Math.min(100, (progressData.currentDurationMinutes / progressData.goal.targetDurationMinutes) * 100);
+      }
+      progressData.progressPercent = Math.round(progressPercent);
+
+      res.json({
+        success: true,
+        progress: progressData,
+        message: 'Goal marked as complete! Your coupon has been activated.'
+      });
+    } catch (error) {
+      console.error('Error marking goal as complete:', error);
+      console.error('Error stack:', error.stack);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to mark goal as complete',
+        error: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
     }
   };
 
@@ -269,6 +359,7 @@ function createUserGoalProgressController({ UserGoalProgress, StoreGoal, Store, 
     joinGoal,
     getUserProgress,
     getGoalProgress,
+    markComplete,
     updateProgressForUser: updateProgressForUserHelper
   };
 }

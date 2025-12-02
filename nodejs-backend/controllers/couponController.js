@@ -220,11 +220,110 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
     }
   };
 
+  // Get all coupons for a store (store only)
+  const getStoreCoupons = async (req, res) => {
+    try {
+      const userId = req.user.id;
+
+      // Check if user has a store account
+      const store = await Store.findOne({
+        where: { userId, isActive: true }
+      });
+
+      if (!store) {
+        return res.status(403).json({
+          success: false,
+          message: 'You must have an active store account to view coupons'
+        });
+      }
+
+      const coupons = await Coupon.findAll({
+        where: { storeId: store.id },
+        include: [
+          {
+            model: StoreGoal,
+            as: 'goal',
+            attributes: ['id', 'title', 'description'],
+            required: false
+          },
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+            required: false
+          }
+        ],
+        order: [['createdAt', 'DESC']]
+      });
+
+      res.json({
+        success: true,
+        coupons: coupons.map(c => c.toJSON())
+      });
+    } catch (error) {
+      console.error('Error fetching store coupons:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch coupons',
+        error: error.message
+      });
+    }
+  };
+
+  // Delete a coupon (store only)
+  const deleteCoupon = async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { couponId } = req.params;
+
+      // Check if user has a store account
+      const store = await Store.findOne({
+        where: { userId, isActive: true }
+      });
+
+      if (!store) {
+        return res.status(403).json({
+          success: false,
+          message: 'You must have an active store account to delete coupons'
+        });
+      }
+
+      // Find the coupon and verify it belongs to this store
+      const coupon = await Coupon.findOne({
+        where: { id: couponId, storeId: store.id }
+      });
+
+      if (!coupon) {
+        return res.status(404).json({
+          success: false,
+          message: 'Coupon not found or you do not have permission to delete it'
+        });
+      }
+
+      // Delete the coupon
+      await coupon.destroy();
+
+      res.json({
+        success: true,
+        message: 'Coupon deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting coupon:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to delete coupon',
+        error: error.message
+      });
+    }
+  };
+
   return {
     getUserCoupons,
     getCoupon,
     useCoupon,
-    createCoupon
+    createCoupon,
+    getStoreCoupons,
+    deleteCoupon
   };
 }
 
