@@ -90,32 +90,32 @@ class EmailService {
       subject: 'Verify Your Email - Mooves',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background-color: #2E7D32; color: white; padding: 20px; text-align: center;">
+          <div style="background: linear-gradient(135deg, #5A3BFF 0%, #7A5CFF 100%); color: white; padding: 20px; text-align: center;">
             <h1>Welcome to Mooves!</h1>
           </div>
           
-          <div style="padding: 20px; background-color: #f9f9f9;">
-            <h2>Hi ${firstName},</h2>
-            <p>Thank you for registering with Mooves! To complete your registration, please enter the verification code below in your app:</p>
+          <div style="padding: 20px; background-color: #FFFCFA;">
+            <h2 style="color: #0A0508;">Hi ${firstName},</h2>
+            <p style="color: #0A0508;">Thank you for registering with Mooves! To complete your registration, please enter the verification code below in your app:</p>
             
             <div style="text-align: center; margin: 30px 0;">
-              <div style="background-color: #4CAF50; color: white; padding: 20px; border-radius: 10px; font-size: 32px; font-weight: bold; letter-spacing: 5px; display: inline-block;">
+              <div style="background: linear-gradient(135deg, #5A3BFF 0%, #7A5CFF 100%); color: white; padding: 20px; border-radius: 10px; font-size: 32px; font-weight: bold; letter-spacing: 5px; display: inline-block;">
                 ${verificationCode}
               </div>
             </div>
             
-            <p><strong>Verification Code:</strong> ${verificationCode}</p>
+            <p style="color: #0A0508;"><strong>Verification Code:</strong> ${verificationCode}</p>
             
-            <p>Enter this code in your Mooves app to verify your email address.</p>
+            <p style="color: #0A0508;">Enter this code in your Mooves app to verify your email address.</p>
             
-            <p>This verification code will expire in 10 minutes.</p>
+            <p style="color: #0A0508;">This verification code will expire in 10 minutes.</p>
             
-            <p>If you didn't create an account with Mooves, you can safely ignore this email.</p>
+            <p style="color: #0A0508;">If you didn't create an account with Mooves, you can safely ignore this email.</p>
             
-            <p>Best regards,<br>The Mooves Team</p>
+            <p style="color: #0A0508;">Best regards,<br>The Mooves Team</p>
           </div>
           
-          <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
+          <div style="background-color: #1F1630; color: white; padding: 15px; text-align: center; font-size: 12px;">
             <p>© 2024 Mooves. All rights reserved.</p>
           </div>
         </div>
@@ -150,53 +150,53 @@ class EmailService {
       subject: 'Reset Your Password - Mooves',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background-color: #2E7D32; color: white; padding: 20px; text-align: center;">
+          <div style="background: linear-gradient(135deg, #5A3BFF 0%, #7A5CFF 100%); color: white; padding: 20px; text-align: center;">
             <h1>Password Reset Request</h1>
           </div>
           
-          <div style="padding: 20px; background-color: #f9f9f9;">
-            <h2>Hi ${firstName},</h2>
-            <p>We received a request to reset your password for your Mooves account.</p>
+          <div style="padding: 20px; background-color: #FFFCFA;">
+            <h2 style="color: #0A0508;">Hi ${firstName},</h2>
+            <p style="color: #0A0508;">We received a request to reset your password for your Mooves account.</p>
             
-            <div style="background-color: #e8f5e8; padding: 20px; border-radius: 10px; margin: 20px 0;">
-              <h3 style="color: #2E7D32; margin-top: 0;">🔒 Reset Your Password</h3>
-              <p style="color: #333;">Click the button below to reset your password:</p>
+            <div style="background-color: #FFFAF8; padding: 20px; border-radius: 10px; margin: 20px 0;">
+              <h3 style="color: #5A3BFF; margin-top: 0;">🔒 Reset Your Password</h3>
+              <p style="color: #0A0508;">Click the button below to reset your password:</p>
               
               <div style="text-align: center; margin: 25px 0;">
-                <a href="${resetUrl}" style="background-color: #4CAF50; color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold; display: inline-block;">
+                <a href="${resetUrl}" style="background: linear-gradient(135deg, #5A3BFF 0%, #7A5CFF 100%); color: white; padding: 15px 40px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold; display: inline-block;">
                   Reset Password
                 </a>
               </div>
               
-              <p style="font-size: 14px; color: #666; text-align: center;">
+              <p style="font-size: 14px; color: #5A3BFF; text-align: center;">
                 Or copy and paste this link in your browser:<br>
-                <a href="${resetUrl}" style="color: #2E7D32; word-break: break-all;">${resetUrl}</a>
+                <a href="${resetUrl}" style="color: #5A3BFF; word-break: break-all;">${resetUrl}</a>
               </p>
               
-              <hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;">
+              <hr style="border: none; border-top: 1px solid #FFD4D0; margin: 20px 0;">
               
-              <p style="font-size: 14px; color: #666;">
+              <p style="font-size: 14px; color: #5A3BFF;">
                 <strong>Using the mobile app?</strong> You can also enter this token manually in the app:
               </p>
               <div style="text-align: center; margin: 15px 0;">
-                <code style="background-color: #fff; color: #2E7D32; padding: 10px 15px; border-radius: 5px; font-size: 16px; font-weight: bold; letter-spacing: 1px; display: inline-block; border: 2px dashed #4CAF50;">
+                <code style="background-color: #FFFCFA; color: #5A3BFF; padding: 10px 15px; border-radius: 5px; font-size: 16px; font-weight: bold; letter-spacing: 1px; display: inline-block; border: 2px dashed #7A5CFF;">
                   ${resetToken}
                 </code>
               </div>
             </div>
             
-            <p><strong>⏱️ Important:</strong> This reset link will expire in 1 hour for security reasons.</p>
+            <p style="color: #0A0508;"><strong>⏱️ Important:</strong> This reset link will expire in 1 hour for security reasons.</p>
             
-            <p style="color: #666; font-size: 14px;">If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
+            <p style="color: #4A2D35; font-size: 14px;">If you didn't request a password reset, you can safely ignore this email. Your password will remain unchanged.</p>
             
-            <p>Best regards,<br>The Mooves Team</p>
+            <p style="color: #0A0508;">Best regards,<br>The Mooves Team</p>
           </div>
           
-          <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
+          <div style="background-color: #1F1630; color: white; padding: 15px; text-align: center; font-size: 12px;">
             <p style="margin: 5px 0;">© 2025 Mooves. All rights reserved.</p>
             <p style="margin: 5px 0;">
-              <a href="https://mooves.se/privacy-policy" style="color: #4CAF50; text-decoration: none;">Privacy Policy</a> | 
-              <a href="https://mooves.se/terms" style="color: #4CAF50; text-decoration: none;">Terms of Service</a>
+              <a href="https://mooves.se/privacy-policy" style="color: #7A5CFF; text-decoration: none;">Privacy Policy</a> | 
+              <a href="https://mooves.se/terms" style="color: #7A5CFF; text-decoration: none;">Terms of Service</a>
             </p>
           </div>
         </div>
