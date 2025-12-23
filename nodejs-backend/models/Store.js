@@ -32,6 +32,11 @@ module.exports = (sequelize) => {
       allowNull: true,
       comment: 'Store logo URL'
     },
+    profilePicture: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      comment: 'Store profile picture URL'
+    },
     location: {
       type: DataTypes.STRING(200),
       allowNull: true,

@@ -1,12 +1,13 @@
 const { Op } = require('sequelize');
 
 function createCouponController({ Coupon, StoreGoal, Store, User }) {
-  // Get user's coupons
+  // Get user's coupons (includes assigned coupons and unassigned coupons available to all users)
   const getUserCoupons = async (req, res) => {
     try {
       const userId = req.user.id;
 
-      const coupons = await Coupon.findAll({
+      // Get coupons assigned to this user
+      const assignedCoupons = await Coupon.findAll({
         where: { userId },
         include: [
           {
@@ -18,15 +19,40 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
           {
             model: Store,
             as: 'store',
-            attributes: ['id', 'storeName', 'logo', 'location']
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
           }
         ],
         order: [['createdAt', 'DESC']]
       });
 
+      // Get unassigned coupons available to all users (where userId is null)
+      const unassignedCoupons = await Coupon.findAll({
+        where: {
+          userId: null,
+          isUsed: false
+        },
+        include: [
+          {
+            model: StoreGoal,
+            as: 'goal',
+            attributes: ['id', 'title', 'description'],
+            required: false
+          },
+          {
+            model: Store,
+            as: 'store',
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+          }
+        ],
+        order: [['createdAt', 'DESC']]
+      });
+
+      // Combine both lists
+      const allCoupons = [...assignedCoupons, ...unassignedCoupons];
+
       res.json({
         success: true,
-        coupons: coupons.map(c => c.toJSON())
+        coupons: allCoupons.map(c => c.toJSON())
       });
     } catch (error) {
       console.error('Error fetching coupons:', error);
@@ -38,14 +64,20 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
     }
   };
 
-  // Get a specific coupon
+  // Get a specific coupon (works for both assigned and unassigned coupons)
   const getCoupon = async (req, res) => {
     try {
       const userId = req.user.id;
       const { couponId } = req.params;
 
       const coupon = await Coupon.findOne({
-        where: { id: couponId, userId },
+        where: {
+          id: couponId,
+          [Op.or]: [
+            { userId: userId },
+            { userId: null } // Unassigned coupons available to all users
+          ]
+        },
         include: [
           {
             model: StoreGoal,
@@ -56,7 +88,7 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
           {
             model: Store,
             as: 'store',
-            attributes: ['id', 'storeName', 'logo', 'location', 'description']
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'description']
           }
         ]
       });
@@ -176,14 +208,35 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
     }
   };
 
-  // Mark coupon as used
+  // Mark coupon as used (works for both assigned and unassigned coupons)
   const useCoupon = async (req, res) => {
     try {
       const userId = req.user.id;
       const { couponId } = req.params;
 
+      // Find coupon - either assigned to this user OR unassigned (available to all)
       const coupon = await Coupon.findOne({
-        where: { id: couponId, userId, isUsed: false }
+        where: {
+          id: couponId,
+          isUsed: false,
+          [Op.or]: [
+            { userId: userId },
+            { userId: null } // Unassigned coupons available to all users
+          ]
+        },
+        include: [
+          {
+            model: Store,
+            as: 'store',
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+          },
+          {
+            model: StoreGoal,
+            as: 'goal',
+            attributes: ['id', 'title', 'description'],
+            required: false
+          }
+        ]
       });
 
       if (!coupon) {
@@ -201,9 +254,33 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
         });
       }
 
-      await coupon.update({
+      // If coupon is unassigned, assign it to this user when using
+      const updateData = {
         isUsed: true,
         usedAt: new Date()
+      };
+
+      if (!coupon.userId) {
+        updateData.userId = userId;
+      }
+
+      await coupon.update(updateData);
+
+      // Reload to get associations
+      await coupon.reload({
+        include: [
+          {
+            model: Store,
+            as: 'store',
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+          },
+          {
+            model: StoreGoal,
+            as: 'goal',
+            attributes: ['id', 'title', 'description'],
+            required: false
+          }
+        ]
       });
 
       res.json({
@@ -317,13 +394,214 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
     }
   };
 
+  // Redeem/claim a coupon by code (for unassigned coupons)
+  const redeemCoupon = async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { code } = req.body;
+
+      if (!code) {
+        return res.status(400).json({
+          success: false,
+          message: 'Coupon code is required'
+        });
+      }
+
+      // Find an unassigned coupon with this code
+      const coupon = await Coupon.findOne({
+        where: {
+          code,
+          userId: null, // Unassigned coupon
+          isUsed: false
+        },
+        include: [
+          {
+            model: Store,
+            as: 'store',
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+          }
+        ]
+      });
+
+      if (!coupon) {
+        return res.status(404).json({
+          success: false,
+          message: 'Coupon not found or already assigned to another user'
+        });
+      }
+
+      // Check if coupon is expired
+      if (coupon.expiresAt && new Date(coupon.expiresAt) < new Date()) {
+        return res.status(400).json({
+          success: false,
+          message: 'This coupon has expired'
+        });
+      }
+
+      // Check if user already has a coupon with this code
+      const existingUserCoupon = await Coupon.findOne({
+        where: {
+          code,
+          userId,
+          isUsed: false
+        }
+      });
+
+      if (existingUserCoupon) {
+        return res.status(400).json({
+          success: false,
+          message: 'You already have this coupon',
+          coupon: existingUserCoupon.toJSON()
+        });
+      }
+
+      // Assign the coupon to the user
+      await coupon.update({
+        userId: userId
+      });
+
+      // Reload with associations
+      await coupon.reload({
+        include: [
+          {
+            model: Store,
+            as: 'store',
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+          },
+          {
+            model: StoreGoal,
+            as: 'goal',
+            attributes: ['id', 'title', 'description'],
+            required: false
+          }
+        ]
+      });
+
+      res.json({
+        success: true,
+        message: 'Coupon redeemed successfully',
+        coupon: coupon.toJSON()
+      });
+    } catch (error) {
+      console.error('Error redeeming coupon:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to redeem coupon',
+        error: error.message
+      });
+    }
+  };
+
+  // Assign an existing coupon to a user (store only)
+  const assignCoupon = async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { couponId } = req.params;
+      const { userEmail } = req.body;
+
+      // Check if user has a store account
+      const store = await Store.findOne({
+        where: { userId, isActive: true }
+      });
+
+      if (!store) {
+        return res.status(403).json({
+          success: false,
+          message: 'You must have an active store account to assign coupons'
+        });
+      }
+
+      // Find the coupon and verify it belongs to this store
+      const coupon = await Coupon.findOne({
+        where: { id: couponId, storeId: store.id }
+      });
+
+      if (!coupon) {
+        return res.status(404).json({
+          success: false,
+          message: 'Coupon not found or you do not have permission to assign it'
+        });
+      }
+
+      // If coupon is already assigned, don't allow reassignment
+      if (coupon.userId) {
+        return res.status(400).json({
+          success: false,
+          message: 'This coupon is already assigned to a user'
+        });
+      }
+
+      // If userEmail is provided, find the user
+      if (!userEmail) {
+        return res.status(400).json({
+          success: false,
+          message: 'User email is required'
+        });
+      }
+
+      const targetUser = await User.findOne({
+        where: { email: userEmail }
+      });
+
+      if (!targetUser) {
+        return res.status(404).json({
+          success: false,
+          message: `User with email ${userEmail} not found`
+        });
+      }
+
+      // Assign the coupon
+      await coupon.update({
+        userId: targetUser.id
+      });
+
+      // Reload with associations
+      await coupon.reload({
+        include: [
+          {
+            model: Store,
+            as: 'store',
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+          },
+          {
+            model: StoreGoal,
+            as: 'goal',
+            attributes: ['id', 'title', 'description'],
+            required: false
+          },
+          {
+            model: User,
+            as: 'user',
+            attributes: ['id', 'email', 'firstName', 'lastName'],
+            required: false
+          }
+        ]
+      });
+
+      res.json({
+        success: true,
+        message: 'Coupon assigned successfully',
+        coupon: coupon.toJSON()
+      });
+    } catch (error) {
+      console.error('Error assigning coupon:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to assign coupon',
+        error: error.message
+      });
+    }
+  };
+
   return {
     getUserCoupons,
     getCoupon,
     useCoupon,
     createCoupon,
     getStoreCoupons,
-    deleteCoupon
+    deleteCoupon,
+    redeemCoupon,
+    assignCoupon
   };
 }
 

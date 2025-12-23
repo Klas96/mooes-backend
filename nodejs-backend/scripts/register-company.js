@@ -92,17 +92,13 @@ async function registerCompany(email, password, storeName, description, location
       return;
     }
 
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // Create user
+    // Create user with plain password (the User model hook will hash it)
     const firstName = storeName.split(' ')[0] || storeName;
     const lastName = storeName.split(' ').slice(1).join(' ') || 'Company';
     
     const user = await User.create({
       email,
-      password: hashedPassword,
+      password: password, // Pass plain password - User model hook will hash it
       firstName,
       lastName,
       emailVerified: true, // Skip email verification for manual registration

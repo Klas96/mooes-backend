@@ -56,11 +56,16 @@ const handleValidationErrors = (req, res, next) => {
 // Protected routes
 // IMPORTANT: Specific routes must come before parameterized routes
 router.post('/', protect, createCouponValidators, handleValidationErrors, couponController.createCoupon);
+router.post('/redeem', protect, [body('code').notEmpty().withMessage('Coupon code is required')], handleValidationErrors, couponController.redeemCoupon);
+router.post('/:couponId/assign', protect, [body('userEmail').isEmail().withMessage('Valid user email is required')], handleValidationErrors, couponController.assignCoupon);
 router.get('/my-coupons', protect, couponController.getUserCoupons);
 router.get('/store/my-coupons', protect, couponController.getStoreCoupons);
 router.post('/:couponId/use', protect, couponController.useCoupon);
 router.delete('/:couponId', protect, couponController.deleteCoupon);
 router.get('/:couponId', protect, couponController.getCoupon);
+
+// Log route registration
+console.log('✅ Coupon routes configured: POST /, POST /redeem, GET /my-coupons, GET /store/my-coupons, POST /:couponId/use, DELETE /:couponId, GET /:couponId');
 
 module.exports = router;
 

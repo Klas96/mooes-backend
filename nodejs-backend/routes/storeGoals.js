@@ -1,6 +1,6 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { protect } = require('../middleware/auth');
+const { protect, optionalAuth } = require('../middleware/auth');
 const { Store, StoreGoal, UserGoalProgress, User } = require('../models');
 const storeGoalController = require('../controllers/storeGoalController')({ Store, StoreGoal, UserGoalProgress, User });
 
@@ -55,8 +55,8 @@ const createGoalValidators = [
     .withMessage('couponDiscountAmount must be a positive number')
 ];
 
-// Public routes
-router.get('/active', storeGoalController.getActiveGoals);
+// Public routes (with optional auth to show user completion status)
+router.get('/active', optionalAuth, storeGoalController.getActiveGoals);
 router.get('/:goalId', storeGoalController.getGoal);
 
 // Protected routes (store only for creating)

@@ -96,7 +96,10 @@ try {
 
 try {
   couponRoutes = require('./routes/coupons');
+  console.log('✅ Coupon routes module loaded successfully');
 } catch (e) {
+  console.error('❌ Error loading coupon routes:', e.message);
+  console.error('Stack trace:', e.stack);
   console.warn('⚠️  coupons routes not found, skipping...');
   couponRoutes = null;
 }
@@ -155,6 +158,10 @@ const limiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req) => {
     return req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress;
+  },
+  skip: (req) => {
+    // Skip rate limiting for OPTIONS requests (CORS preflight)
+    return req.method === 'OPTIONS';
   }
 });
 app.use('/api/', limiter);
@@ -279,10 +286,35 @@ if (userGoalProgressRoutes) {
   app.use('/api/user-goal-progress', userGoalProgressRoutes);
 }
 if (couponRoutes) {
+  // Add request logging for coupon routes to help debug
+  app.use('/api/coupons', (req, res, next) => {
+    console.log(`🎫 Coupon route request: ${req.method} ${req.path}`);
+    next();
+  });
   app.use('/api/coupons', couponRoutes);
+  console.log('✅ Coupon routes registered at /api/coupons');
+  console.log('   Available endpoints:');
+  console.log('   - POST   /api/coupons');
+  console.log('   - GET    /api/coupons/my-coupons');
+  console.log('   - GET    /api/coupons/store/my-coupons');
+  console.log('   - POST   /api/coupons/:couponId/use');
+  console.log('   - DELETE /api/coupons/:couponId');
+  console.log('   - GET    /api/coupons/:couponId');
+} else {
+  console.error('❌ Coupon routes not available - routes will not be registered');
+  console.error('   This means POST /api/coupons will return 404');
 }
 if (storeRoutes) {
   app.use('/api/stores', storeRoutes);
+  console.log('✅ Store routes registered at /api/stores');
+  console.log('   Available endpoints:');
+  console.log('   - GET    /api/stores/:storeId (public)');
+  console.log('   - POST   /api/stores (protected)');
+  console.log('   - GET    /api/stores/my-store (protected)');
+  console.log('   - PUT    /api/stores/my-store (protected)');
+  console.log('   - POST   /api/stores/upload-profile-picture (protected)');
+} else {
+  console.warn('⚠️  Store routes not available');
 }
 if (googleFitRoutes) {
   app.use('/api/google-fit', googleFitRoutes);
@@ -333,7 +365,17 @@ app.use((error, req, res, next) => {
 
 // Handle 404 errors
 app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  // Only log API routes to avoid spam
+  if (req.originalUrl.startsWith('/api/')) {
+    console.warn(`⚠️  404 - Route not found: ${req.method} ${req.originalUrl}`);
+    console.warn(`   Available routes: Check server startup logs for registered routes`);
+  }
+  res.status(404).json({ 
+    error: 'Route not found',
+    method: req.method,
+    path: req.originalUrl,
+    message: `No route found for ${req.method} ${req.originalUrl}`
+  });
 });
 
 // Start server AFTER routes are registered

@@ -1,10 +1,40 @@
 const express = require('express');
+const multer = require('multer');
+const path = require('path');
 const { body } = require('express-validator');
 const { protect } = require('../middleware/auth');
 const { Store, User } = require('../models');
 const storeController = require('../controllers/storeController')({ Store, User });
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, 'store-profile-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  // Accept only image files
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed!'), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024 // 5MB default
+  },
+  fileFilter: fileFilter
+});
 
 // Validation for creating a store
 const createStoreValidators = [
@@ -38,10 +68,14 @@ const createStoreValidators = [
     .withMessage('Logo must be a valid URL')
 ];
 
-// Protected routes
+// Protected routes (must come before /:storeId to avoid route conflict)
 router.post('/', protect, createStoreValidators, storeController.createStore);
 router.get('/my-store', protect, storeController.getMyStore);
 router.put('/my-store', protect, storeController.updateMyStore);
+router.post('/upload-profile-picture', protect, upload.single('profilePicture'), storeController.uploadProfilePicture);
+
+// Public routes (must come after specific routes like /my-store)
+router.get('/:storeId', storeController.getStoreById);
 
 module.exports = router;
 

@@ -5,6 +5,7 @@ function createStoreGoalController({ Store, StoreGoal, UserGoalProgress, User })
   const getActiveGoals = async (req, res) => {
     try {
       const today = new Date().toISOString().split('T')[0];
+      const userId = req.user?.id; // Optional - user may not be logged in
       
       const goals = await StoreGoal.findAll({
         where: {
@@ -28,23 +29,46 @@ function createStoreGoalController({ Store, StoreGoal, UserGoalProgress, User })
                 attributes: ['id', 'firstName', 'lastName', 'email']
               }
             ],
-            attributes: ['id', 'storeName', 'logo', 'location']
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
           }
         ],
         order: [['createdAt', 'DESC']],
         limit: 50
       });
 
-      // Get participant counts for each goal
+      // Get participant counts and user's completion status for each goal
       const goalsWithCounts = await Promise.all(
         goals.map(async (goal) => {
           const participantCount = await UserGoalProgress.count({
             where: { goalId: goal.id }
           });
           
+          const completedCount = await UserGoalProgress.count({
+            where: { goalId: goal.id, isCompleted: true }
+          });
+          
+          // Check if current user has completed this goal
+          let userProgress = null;
+          let isCompleted = false;
+          if (userId) {
+            userProgress = await UserGoalProgress.findOne({
+              where: { 
+                goalId: goal.id,
+                userId: userId
+              },
+              attributes: ['id', 'isCompleted', 'completedAt', 'currentDistanceMeters', 'currentDurationMinutes']
+            });
+            if (userProgress) {
+              isCompleted = userProgress.isCompleted;
+            }
+          }
+          
           const goalData = goal.toJSON();
           goalData.participantCount = participantCount;
+          goalData.completedCount = completedCount;
           goalData.isFull = goal.maxParticipants != null && participantCount >= goal.maxParticipants;
+          goalData.isCompleted = isCompleted;
+          goalData.userProgress = userProgress ? userProgress.toJSON() : null;
           
           return goalData;
         })
@@ -210,7 +234,7 @@ function createStoreGoalController({ Store, StoreGoal, UserGoalProgress, User })
                 attributes: ['id', 'firstName', 'lastName', 'email']
               }
             ],
-            attributes: ['id', 'storeName', 'logo', 'location', 'description']
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'description']
           }
         ]
       });
