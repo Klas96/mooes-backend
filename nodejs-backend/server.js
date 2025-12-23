@@ -171,18 +171,27 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
   : ['*'];
 
+// GitHub Pages origin pattern
+const GITHUB_PAGES_PATTERN = /^https:\/\/.*\.github\.io$/;
+
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) return callback(null, true);
     
-    // If wildcard is in allowed origins, return the requesting origin
+    // If wildcard is in allowed origins, allow all origins
     if (allowedOrigins.includes('*')) {
       return callback(null, origin);
     }
     
     // Check exact match first
     if (allowedOrigins.includes(origin)) {
+      return callback(null, origin);
+    }
+    
+    // Check for GitHub Pages (https://*.github.io)
+    if (GITHUB_PAGES_PATTERN.test(origin)) {
+      console.log('CORS: Allowing GitHub Pages origin:', origin);
       return callback(null, origin);
     }
     
