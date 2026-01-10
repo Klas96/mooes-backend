@@ -53,11 +53,11 @@ You should see:
 
 ## Deploy Convex Functions
 
-Make sure your Convex functions are deployed:
+Deploy your Convex functions to production:
 ```bash
 cd mooves-backend/nodejs-backend
-npx convex deploy
+npx convex deploy --yes
 ```
 
-This will deploy all your queries and mutations to Convex.
+This will deploy all your queries, mutations, and schema to the production Convex deployment. The `--yes` flag skips the confirmation prompt.
 

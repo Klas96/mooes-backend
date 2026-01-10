@@ -33,8 +33,10 @@ vercel env add CONVEX_URL production
 
 ```bash
 cd mooves-backend/nodejs-backend
-npx convex deploy --prod
+npx convex deploy --yes
 ```
+
+Note: `convex deploy` deploys to production by default. The `--yes` flag skips the confirmation prompt.
 
 This will deploy all your queries, mutations, and schema to the production Convex deployment.
 
