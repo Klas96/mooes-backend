@@ -732,42 +732,49 @@ function createAuthController({ User, UserProfile, emailService }) {
 }
 
 // Default export for app use
-const { User: UserModel, UserProfile: UserProfileModel } = require('../models');
-const emailService = require('../services/emailService');
+// Try Convex first, fallback to Sequelize if available
+const convexService = require('../services/convexService');
 
-// Only create controller if models are available and have sequelize connection
 let defaultAuthController;
-if (UserModel && UserProfileModel && UserModel.sequelize) {
-  console.log('✅ Creating auth controller with initialized models');
-  defaultAuthController = createAuthController({ User: UserModel, UserProfile: UserProfileModel, emailService });
+if (convexService.isAvailable()) {
+  console.log('✅ Using Convex-based auth controller');
+  // Use Convex version
+  defaultAuthController = require('./authControllerConvex');
 } else {
-  console.error('⚠️ ERROR: Cannot create auth controller - models not available or not initialized');
-  console.error('⚠️ UserModel:', !!UserModel);
-  console.error('⚠️ UserProfileModel:', !!UserProfileModel);
-  console.error('⚠️ UserModel.sequelize:', !!UserModel?.sequelize);
-  console.error('⚠️ DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
-  // Create a dummy controller that returns errors for all methods
-  const errorResponse = (req, res) => {
-    console.error(`❌ ${req.method} ${req.path} called but controller not initialized - models not available`);
-    return res.status(503).json({ 
-      error: 'Database connection not available. Please try again in a few moments.',
-      code: 'DATABASE_CONNECTION_ERROR'
-    });
-  };
+  // Fallback to Sequelize version
+  const { User: UserModel, UserProfile: UserProfileModel } = require('../models');
+  const emailService = require('../services/emailService');
   
-  defaultAuthController = {
-    register: errorResponse,
-    verifyEmail: errorResponse,
-    resendVerification: errorResponse,
-    login: errorResponse,
-    googleLogin: errorResponse,
-    logout: errorResponse,
-    getMe: errorResponse,
-    deleteAccount: errorResponse,
-    requestPasswordReset: errorResponse,
-    resetPassword: errorResponse,
-    updateFcmToken: errorResponse,
-  };
+  if (UserModel && UserProfileModel && UserModel.sequelize) {
+    console.log('✅ Creating auth controller with Sequelize models');
+    defaultAuthController = createAuthController({ User: UserModel, UserProfile: UserProfileModel, emailService });
+  } else {
+    console.error('⚠️ ERROR: Cannot create auth controller - neither Convex nor Sequelize available');
+    console.error('⚠️ CONVEX_URL:', process.env.CONVEX_URL ? 'SET' : 'NOT SET');
+    console.error('⚠️ DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+    // Create a dummy controller that returns errors for all methods
+    const errorResponse = (req, res) => {
+      console.error(`❌ ${req.method} ${req.path} called but no database available`);
+      return res.status(503).json({ 
+        error: 'Database connection not available. Please try again in a few moments.',
+        code: 'DATABASE_CONNECTION_ERROR'
+      });
+    };
+    
+    defaultAuthController = {
+      register: errorResponse,
+      verifyEmail: errorResponse,
+      resendVerification: errorResponse,
+      login: errorResponse,
+      googleLogin: errorResponse,
+      logout: errorResponse,
+      getMe: errorResponse,
+      deleteAccount: errorResponse,
+      requestPasswordReset: errorResponse,
+      resetPassword: errorResponse,
+      updateFcmToken: errorResponse,
+    };
+  }
 }
 
 // Export default instance's methods for router destructuring
