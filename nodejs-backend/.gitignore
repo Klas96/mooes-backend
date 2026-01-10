@@ -238,3 +238,4 @@ test-*.js
 # Deployment scripts (may contain secrets)
 deploy-*.sh
 *.deploy.sh
+.vercel
