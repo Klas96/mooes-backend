@@ -354,6 +354,8 @@ function createAuthControllerConvex({ emailService }) {
           id: user._id,
           lastLogin: Date.now(),
         });
+        // Refresh user data
+        user = await convexService.query('users:getById', { id: user._id });
       }
 
       const formattedUser = formatUser(user);
