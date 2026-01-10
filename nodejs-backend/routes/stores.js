@@ -9,15 +9,19 @@ const storeController = require('../controllers/storeController')({ Store, User 
 const router = express.Router();
 
 // Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'store-profile-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Use memory storage for Vercel (serverless) or disk storage for traditional servers
+const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+const storage = isVercel
+  ? multer.memoryStorage() // Use memory storage on Vercel
+  : multer.diskStorage({
+      destination: function (req, file, cb) {
+        cb(null, 'uploads/');
+      },
+      filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'store-profile-' + uniqueSuffix + path.extname(file.originalname));
+      }
+    });
 
 const fileFilter = (req, file, cb) => {
   // Accept only image files
@@ -53,6 +57,12 @@ const createStoreValidators = [
     .trim()
     .isLength({ max: 200 })
     .withMessage('Location must be less than 200 characters'),
+  body('website')
+    .optional({ nullable: true })
+    .isString()
+    .trim()
+    .isURL({ protocols: ['http', 'https'], require_protocol: true })
+    .withMessage('Website must be a valid URL (including http:// or https://)'),
   body('latitude')
     .optional({ nullable: true })
     .isFloat({ min: -90, max: 90 })

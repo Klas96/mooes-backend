@@ -95,12 +95,15 @@ export default defineSchema({
     currentDurationMinutes: v.number(),
     isCompleted: v.boolean(),
     completedAt: v.optional(v.number()), // Timestamp in milliseconds
+    couponActivated: v.optional(v.boolean()),
+    couponActivatedAt: v.optional(v.number()), // Timestamp in milliseconds
     createdAt: v.number(),
     updatedAt: v.number(),
   })
     .index("userId", ["userId"])
     .index("goalId", ["goalId"])
-    .index("userId_goalId", ["userId", "goalId"]),
+    .index("userId_goalId", ["userId", "goalId"])
+    .index("isCompleted", ["isCompleted"]),
 
   // Coupons table
   coupons: defineTable({

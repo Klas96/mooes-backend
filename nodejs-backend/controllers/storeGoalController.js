@@ -29,7 +29,7 @@ function createStoreGoalController({ Store, StoreGoal, UserGoalProgress, User })
                 attributes: ['id', 'firstName', 'lastName', 'email']
               }
             ],
-            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'website']
           }
         ],
         order: [['createdAt', 'DESC']],
@@ -234,7 +234,7 @@ function createStoreGoalController({ Store, StoreGoal, UserGoalProgress, User })
                 attributes: ['id', 'firstName', 'lastName', 'email']
               }
             ],
-            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'description']
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'website', 'description']
           }
         ]
       });

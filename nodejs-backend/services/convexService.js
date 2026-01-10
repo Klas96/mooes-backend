@@ -67,22 +67,26 @@ class ConvexService {
 
   /**
    * Execute a Convex query
-   * @param {string} path - Query path (e.g., "users:getById")
+   * @param {string} path - Query path (e.g., "queries:users:getById")
    * @param {object} args - Query arguments
    * @returns {Promise<any>} Query result
    */
   async query(path, args = {}) {
-    return await this._request('query', path, args);
+    // Ensure path starts with "queries:"
+    const fullPath = path.startsWith('queries:') ? path : `queries:${path}`;
+    return await this._request('query', fullPath, args);
   }
 
   /**
    * Execute a Convex mutation
-   * @param {string} path - Mutation path (e.g., "users:create")
+   * @param {string} path - Mutation path (e.g., "mutations:users:create")
    * @param {object} args - Mutation arguments
    * @returns {Promise<any>} Mutation result
    */
   async mutation(path, args = {}) {
-    return await this._request('mutation', path, args);
+    // Ensure path starts with "mutations:"
+    const fullPath = path.startsWith('mutations:') ? path : `mutations:${path}`;
+    return await this._request('mutation', fullPath, args);
   }
 
   /**

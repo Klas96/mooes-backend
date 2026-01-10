@@ -72,37 +72,76 @@ const uploadProfilePicture = async (req, res) => {
     }
 
     console.log(`  - Original filename: ${req.file.originalname}`);
-    console.log(`  - Stored filename: ${req.file.filename}`);
-    console.log(`  - File path: ${req.file.path}`);
     console.log(`  - File size: ${req.file.size} bytes`);
     console.log(`  - MIME type: ${req.file.mimetype}`);
-
-    // Check if file exists at the path multer saved it
-    if (!fs.existsSync(req.file.path)) {
-      console.error(`❌ File does not exist at path: ${req.file.path}`);
-      return res.status(500).json({ error: 'Uploaded file not found' });
-    }
+    console.log(`  - Buffer present: ${!!req.file.buffer}`);
+    console.log(`  - Path present: ${!!req.file.path}`);
 
     await ensureProfile(req.user.id);
 
-    console.log('📁 Initializing LocalStorageService...');
-    const storageService = new LocalStorageService();
-    console.log(`  - Uploads directory: ${storageService.uploadsDir}`);
+    // Determine if we're on Vercel (serverless) or traditional server
+    const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+    const useCloudinary = isVercel || process.env.USE_CLOUDINARY === '1';
     
-    console.log('📤 Uploading to local storage...');
-    const uploadResult = await storageService.uploadImage(req.file.path, 'profiles');
-    console.log(`✅ Upload successful: ${uploadResult.url}`);
-    console.log(`  - Destination: ${uploadResult.destination}`);
-    
-    const imageUrl = uploadResult.url;
+    let imageUrl;
 
-    // Clean up the original multer file (it's been processed and moved)
-    if (req.file.path && fs.existsSync(req.file.path)) {
-      try {
-        fs.unlinkSync(req.file.path);
-        console.log(`🗑️ Cleaned up temporary file: ${req.file.path}`);
-      } catch (err) {
-        console.error('⚠️ Error cleaning up temporary upload:', err);
+    if (useCloudinary) {
+      // Use Cloudinary for Vercel/serverless deployments
+      const CloudinaryService = require('../services/cloudinaryService');
+      const cloudinaryService = new CloudinaryService();
+      
+      if (!cloudinaryService.isConfigured) {
+        return res.status(500).json({
+          error: 'Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.'
+        });
+      }
+
+      console.log('📤 Uploading to Cloudinary...');
+      
+      if (req.file.buffer) {
+        // Memory storage (Vercel)
+        const uploadResult = await cloudinaryService.uploadImageFromBuffer(
+          req.file.buffer,
+          req.file.originalname,
+          'mooves/profiles'
+        );
+        imageUrl = uploadResult.url;
+        console.log(`✅ Upload successful: ${imageUrl}`);
+      } else if (req.file.path && fs.existsSync(req.file.path)) {
+        // Disk storage (traditional server)
+        const uploadResult = await cloudinaryService.uploadImage(req.file.path, 'mooves/profiles');
+        imageUrl = uploadResult.url;
+        console.log(`✅ Upload successful: ${imageUrl}`);
+      } else {
+        return res.status(500).json({ error: 'File data not found' });
+      }
+    } else {
+      // Use local storage for traditional servers
+      // Check if file exists at the path multer saved it
+      if (!req.file.path || !fs.existsSync(req.file.path)) {
+        console.error(`❌ File does not exist at path: ${req.file.path}`);
+        return res.status(500).json({ error: 'Uploaded file not found' });
+      }
+
+      console.log('📁 Initializing LocalStorageService...');
+      const storageService = new LocalStorageService();
+      console.log(`  - Uploads directory: ${storageService.uploadsDir}`);
+      
+      console.log('📤 Uploading to local storage...');
+      const uploadResult = await storageService.uploadImage(req.file.path, 'profiles');
+      console.log(`✅ Upload successful: ${uploadResult.url}`);
+      console.log(`  - Destination: ${uploadResult.destination}`);
+      
+      imageUrl = uploadResult.url;
+
+      // Clean up the original multer file (it's been processed and moved)
+      if (req.file.path && fs.existsSync(req.file.path)) {
+        try {
+          fs.unlinkSync(req.file.path);
+          console.log(`🗑️ Cleaned up temporary file: ${req.file.path}`);
+        } catch (err) {
+          console.error('⚠️ Error cleaning up temporary upload:', err);
+        }
       }
     }
 
@@ -147,8 +186,29 @@ const deleteImage = async (req, res) => {
       return res.status(404).json({ error: 'Image not found' });
     }
 
-    const storageService = new LocalStorageService();
-    await storageService.deleteImage(image.imageUrl);
+    // Delete image file from storage
+    try {
+      const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+      const useCloudinary = isVercel || process.env.USE_CLOUDINARY === '1';
+      
+      if (useCloudinary && image.imageUrl && image.imageUrl.includes('cloudinary.com')) {
+        // Delete from Cloudinary
+        const CloudinaryService = require('../services/cloudinaryService');
+        const cloudinaryService = new CloudinaryService();
+        if (cloudinaryService.isConfigured) {
+          await cloudinaryService.deleteImageByUrl(image.imageUrl);
+          console.log(`🗑️ Deleted image from Cloudinary: ${image.imageUrl}`);
+        }
+      } else {
+        // Delete from local storage
+        const storageService = new LocalStorageService();
+        await storageService.deleteImage(image.imageUrl);
+        console.log(`🗑️ Deleted image file: ${image.imageUrl}`);
+      }
+    } catch (err) {
+      console.error('⚠️ Error deleting image file:', err);
+      // Continue even if file deletion fails - database record is deleted
+    }
 
     await image.destroy();
 

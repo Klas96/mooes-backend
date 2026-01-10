@@ -42,6 +42,11 @@ module.exports = (sequelize) => {
       allowNull: true,
       comment: 'Store location/address'
     },
+    website: {
+      type: DataTypes.STRING(500),
+      allowNull: true,
+      comment: 'Store website URL'
+    },
     latitude: {
       type: DataTypes.DECIMAL(10, 8),
       allowNull: true

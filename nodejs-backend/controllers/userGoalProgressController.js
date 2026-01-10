@@ -84,7 +84,7 @@ function createUserGoalProgressController({ UserGoalProgress, StoreGoal, Store, 
               {
                 model: Store,
                 as: 'store',
-                attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+                attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'website']
               }
             ]
           }
@@ -138,7 +138,7 @@ function createUserGoalProgressController({ UserGoalProgress, StoreGoal, Store, 
               {
                 model: Store,
                 as: 'store',
-                attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+                attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'website']
               }
             ]
           }
@@ -249,7 +249,7 @@ function createUserGoalProgressController({ UserGoalProgress, StoreGoal, Store, 
               {
                 model: Store,
                 as: 'store',
-                attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+                attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'website']
               }
             ]
           }
@@ -317,7 +317,7 @@ function createUserGoalProgressController({ UserGoalProgress, StoreGoal, Store, 
               {
                 model: Store,
                 as: 'store',
-                attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+                attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'website']
               }
             ]
           }

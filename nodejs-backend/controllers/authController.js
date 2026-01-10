@@ -1,7 +1,8 @@
-const { User, UserProfile } = require('../models');
 const { generateToken } = require('../middleware/auth');
 const { validationResult } = require('express-validator');
 const { OAuth2Client } = require('google-auth-library');
+const convexService = require('../services/convexService');
+const { hashPassword, comparePassword, formatUser, formatProfile, dateToTimestamp } = require('../helpers/convexHelpers');
 
 
 function createAuthController({ User, UserProfile, emailService }) {

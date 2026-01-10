@@ -19,7 +19,7 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
           {
             model: Store,
             as: 'store',
-            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'website']
           }
         ],
         order: [['createdAt', 'DESC']]
@@ -41,7 +41,7 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
           {
             model: Store,
             as: 'store',
-            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'website']
           }
         ],
         order: [['createdAt', 'DESC']]
@@ -88,7 +88,7 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
           {
             model: Store,
             as: 'store',
-            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'description']
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'website', 'description']
           }
         ]
       });
@@ -228,7 +228,7 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
           {
             model: Store,
             as: 'store',
-            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'website']
           },
           {
             model: StoreGoal,
@@ -272,7 +272,7 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
           {
             model: Store,
             as: 'store',
-            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'website']
           },
           {
             model: StoreGoal,
@@ -418,7 +418,7 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
           {
             model: Store,
             as: 'store',
-            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'website']
           }
         ]
       });
@@ -466,7 +466,7 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
           {
             model: Store,
             as: 'store',
-            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'website']
           },
           {
             model: StoreGoal,
@@ -561,7 +561,7 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
           {
             model: Store,
             as: 'store',
-            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location']
+            attributes: ['id', 'storeName', 'logo', 'profilePicture', 'location', 'website']
           },
           {
             model: StoreGoal,

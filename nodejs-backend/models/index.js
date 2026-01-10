@@ -9,10 +9,21 @@ if (process.env.DATABASE_URL) {
   const isTest = process.env.NODE_ENV === 'test';
   const isSQLite = process.env.DATABASE_URL.startsWith('sqlite:');
   
-    const config = {
+    // Serverless-friendly connection pool configuration
+  // Vercel and other serverless platforms need smaller pools
+  const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+  const isServerless = isVercel || process.env.SERVERLESS === '1';
+  
+  const config = {
       dialect: isSQLite ? 'sqlite' : 'postgres',
       logging: false,
-      pool: {
+      pool: isServerless ? {
+        max: 1,  // Single connection for serverless (each function instance)
+        min: 0,  // No minimum for serverless
+        acquire: 30000,  // 30 seconds for serverless
+        idle: 10000,  // 10 seconds idle timeout for serverless
+        evict: 5000  // Check every 5 seconds for serverless
+      } : {
         max: 10,
         min: 2,  // Keep at least 2 connections alive to avoid connection acquisition delays
         acquire: 60000,  // Increased to 60 seconds for connection acquisition

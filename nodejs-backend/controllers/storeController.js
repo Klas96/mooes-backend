@@ -29,6 +29,7 @@ function createStoreController({ Store, User }) {
         storeName,
         description,
         location,
+        website,
         latitude,
         longitude,
         logo
@@ -46,6 +47,7 @@ function createStoreController({ Store, User }) {
         storeName,
         description: description || null,
         location: location || null,
+        website: website || null,
         latitude: latitude || null,
         longitude: longitude || null,
         logo: logo || null,
@@ -92,7 +94,7 @@ function createStoreController({ Store, User }) {
         where: { 
           id: storeIdInt
         },
-        attributes: ['id', 'storeName', 'description', 'logo', 'profilePicture', 'location', 'latitude', 'longitude', 'isActive', 'createdAt', 'updatedAt']
+        attributes: ['id', 'storeName', 'description', 'logo', 'profilePicture', 'location', 'website', 'latitude', 'longitude', 'isActive', 'createdAt', 'updatedAt']
       });
 
       if (!store) {
@@ -187,6 +189,7 @@ function createStoreController({ Store, User }) {
         storeName,
         description,
         location,
+        website,
         latitude,
         longitude,
         logo,
@@ -199,6 +202,7 @@ function createStoreController({ Store, User }) {
       if (storeName !== undefined) updateData.storeName = storeName;
       if (description !== undefined) updateData.description = description;
       if (location !== undefined) updateData.location = location;
+      if (website !== undefined) updateData.website = website;
       if (latitude !== undefined) updateData.latitude = latitude;
       if (longitude !== undefined) updateData.longitude = longitude;
       if (logo !== undefined) updateData.logo = logo;
@@ -242,19 +246,10 @@ function createStoreController({ Store, User }) {
       }
 
       console.log(`  - Original filename: ${req.file.originalname}`);
-      console.log(`  - Stored filename: ${req.file.filename}`);
-      console.log(`  - File path: ${req.file.path}`);
       console.log(`  - File size: ${req.file.size} bytes`);
       console.log(`  - MIME type: ${req.file.mimetype}`);
-
-      // Check if file exists at the path multer saved it
-      if (!fs.existsSync(req.file.path)) {
-        console.error(`❌ File does not exist at path: ${req.file.path}`);
-        return res.status(500).json({
-          success: false,
-          message: 'Uploaded file not found'
-        });
-      }
+      console.log(`  - Buffer present: ${!!req.file.buffer}`);
+      console.log(`  - Path present: ${!!req.file.path}`);
 
       // Find the user's store
       const store = await Store.findOne({
@@ -268,38 +263,97 @@ function createStoreController({ Store, User }) {
         });
       }
 
-      console.log('📁 Initializing LocalStorageService...');
-      const storageService = new LocalStorageService();
-      console.log(`  - Uploads directory: ${storageService.uploadsDir}`);
+      // Determine if we're on Vercel (serverless) or traditional server
+      const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+      const useCloudinary = isVercel || process.env.USE_CLOUDINARY === '1';
       
-      console.log('📤 Uploading to local storage...');
-      const uploadResult = await storageService.uploadImage(req.file.path, 'stores');
-      console.log(`✅ Upload successful: ${uploadResult.url}`);
-      console.log(`  - Destination: ${uploadResult.destination}`);
-      
-      const imageUrl = uploadResult.url;
+      let imageUrl;
 
-      // Clean up the original multer file (it's been processed and moved)
-      if (req.file.path && fs.existsSync(req.file.path)) {
-        try {
-          fs.unlinkSync(req.file.path);
-          console.log(`🗑️ Cleaned up temporary file: ${req.file.path}`);
-        } catch (err) {
-          console.error('⚠️ Error cleaning up temporary upload:', err);
+      if (useCloudinary) {
+        // Use Cloudinary for Vercel/serverless deployments
+        const CloudinaryService = require('../services/cloudinaryService');
+        const cloudinaryService = new CloudinaryService();
+        
+        if (!cloudinaryService.isConfigured) {
+          return res.status(500).json({
+            success: false,
+            message: 'Cloudinary is not configured. Please set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET environment variables.'
+          });
         }
-      }
 
-      // Delete old profile picture if it exists
-      if (store.profilePicture) {
-        try {
-          const oldImagePath = store.profilePicture.replace(/^\/uploads\//, '');
-          const oldImageFullPath = path.join(storageService.uploadsDir, oldImagePath);
-          if (fs.existsSync(oldImageFullPath)) {
-            fs.unlinkSync(oldImageFullPath);
-            console.log(`🗑️ Deleted old profile picture: ${oldImagePath}`);
+        console.log('📤 Uploading to Cloudinary...');
+        
+        if (req.file.buffer) {
+          // Memory storage (Vercel)
+          const uploadResult = await cloudinaryService.uploadImageFromBuffer(
+            req.file.buffer,
+            req.file.originalname,
+            'mooves/stores'
+          );
+          imageUrl = uploadResult.url;
+          console.log(`✅ Upload successful: ${imageUrl}`);
+        } else if (req.file.path && fs.existsSync(req.file.path)) {
+          // Disk storage (traditional server)
+          const uploadResult = await cloudinaryService.uploadImage(req.file.path, 'mooves/stores');
+          imageUrl = uploadResult.url;
+          console.log(`✅ Upload successful: ${imageUrl}`);
+        } else {
+          return res.status(500).json({
+            success: false,
+            message: 'File data not found'
+          });
+        }
+
+        // Delete old profile picture from Cloudinary if it exists
+        if (store.profilePicture && store.profilePicture.includes('cloudinary.com')) {
+          try {
+            await cloudinaryService.deleteImageByUrl(store.profilePicture);
+            console.log(`🗑️ Deleted old profile picture from Cloudinary`);
+          } catch (err) {
+            console.error('⚠️ Error deleting old profile picture from Cloudinary:', err);
           }
-        } catch (err) {
-          console.error('⚠️ Error deleting old profile picture:', err);
+        }
+      } else {
+        // Use local storage for traditional servers
+        if (!req.file.path || !fs.existsSync(req.file.path)) {
+          console.error(`❌ File does not exist at path: ${req.file.path}`);
+          return res.status(500).json({
+            success: false,
+            message: 'Uploaded file not found'
+          });
+        }
+
+        console.log('📁 Initializing LocalStorageService...');
+        const storageService = new LocalStorageService();
+        console.log(`  - Uploads directory: ${storageService.uploadsDir}`);
+        
+        console.log('📤 Uploading to local storage...');
+        const uploadResult = await storageService.uploadImage(req.file.path, 'stores');
+        console.log(`✅ Upload successful: ${uploadResult.url}`);
+        imageUrl = uploadResult.url;
+
+        // Clean up the original multer file (it's been processed and moved)
+        if (req.file.path && fs.existsSync(req.file.path)) {
+          try {
+            fs.unlinkSync(req.file.path);
+            console.log(`🗑️ Cleaned up temporary file: ${req.file.path}`);
+          } catch (err) {
+            console.error('⚠️ Error cleaning up temporary upload:', err);
+          }
+        }
+
+        // Delete old profile picture if it exists
+        if (store.profilePicture) {
+          try {
+            const oldImagePath = store.profilePicture.replace(/^\/uploads\//, '');
+            const oldImageFullPath = path.join(storageService.uploadsDir, oldImagePath);
+            if (fs.existsSync(oldImageFullPath)) {
+              fs.unlinkSync(oldImageFullPath);
+              console.log(`🗑️ Deleted old profile picture: ${oldImagePath}`);
+            }
+          } catch (err) {
+            console.error('⚠️ Error deleting old profile picture:', err);
+          }
         }
       }
 
