@@ -32,26 +32,31 @@ export const create = mutation({
       throw new Error("Email already exists");
     }
     
-    const userId = await ctx.db.insert("users", {
+    // Build user object - only include defined fields (don't set undefined)
+    const userData = {
       email: args.email,
       password: args.password,
       firstName: args.firstName,
       lastName: args.lastName,
-      fcmToken: args.fcmToken,
       isPremium: args.isPremium || false,
-      premiumExpiry: args.premiumExpiry,
-      premiumPlan: args.premiumPlan,
       isActive: true,
       lastLogin: now,
       emailVerified: args.emailVerified || false,
-      emailVerificationToken: undefined,
-      emailVerificationExpiry: undefined,
-      resetPasswordToken: undefined,
-      resetPasswordExpiry: undefined,
-      aiMessageCount: 0,
+      aiMessageCount: args.aiMessageCount || 0,
       createdAt: now,
       updatedAt: now,
-    });
+    };
+    
+    // Add optional fields only if they're defined
+    if (args.fcmToken !== undefined) userData.fcmToken = args.fcmToken;
+    if (args.premiumExpiry !== undefined) userData.premiumExpiry = args.premiumExpiry;
+    if (args.premiumPlan !== undefined) userData.premiumPlan = args.premiumPlan;
+    if (args.emailVerificationToken !== undefined) userData.emailVerificationToken = args.emailVerificationToken;
+    if (args.emailVerificationExpiry !== undefined) userData.emailVerificationExpiry = args.emailVerificationExpiry;
+    if (args.resetPasswordToken !== undefined) userData.resetPasswordToken = args.resetPasswordToken;
+    if (args.resetPasswordExpiry !== undefined) userData.resetPasswordExpiry = args.resetPasswordExpiry;
+    
+    const userId = await ctx.db.insert("users", userData);
     
     return userId;
   },

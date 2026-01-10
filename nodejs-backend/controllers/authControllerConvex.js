@@ -78,7 +78,6 @@ function createAuthControllerConvex({ emailService }) {
         emailVerificationToken: verificationCode,
         emailVerificationExpiry: verificationExpiry,
         isPremium: false,
-        isActive: true,
         lastLogin: Date.now(),
         aiMessageCount: 0,
       });
