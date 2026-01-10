@@ -18,6 +18,12 @@ export const create = mutation({
     premiumExpiry: v.optional(v.number()),
     premiumPlan: v.optional(v.string()),
     emailVerified: v.optional(v.boolean()),
+    emailVerificationToken: v.optional(v.string()),
+    emailVerificationExpiry: v.optional(v.number()),
+    resetPasswordToken: v.optional(v.string()),
+    resetPasswordExpiry: v.optional(v.number()),
+    aiMessageCount: v.optional(v.number()),
+    lastLogin: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
