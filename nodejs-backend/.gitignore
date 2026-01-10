@@ -239,3 +239,7 @@ test-*.js
 deploy-*.sh
 *.deploy.sh
 .vercel
+
+# Convex
+convex/_generated/
+convex.json
