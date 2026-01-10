@@ -2,9 +2,15 @@
 
 Your Convex project is ready, but you need to set the environment variable in Vercel.
 
-## Your Convex URL
+## Your Convex URLs
+
+You have two deployments:
+- **Dev:** `https://artful-canary-975.convex.cloud` (for local development)
+- **Prod:** `https://loyal-capybara-991.convex.cloud` (for production/Vercel)
+
+**Use the PROD URL for Vercel:**
 ```
-https://artful-canary-975.convex.cloud
+https://loyal-capybara-991.convex.cloud
 ```
 
 ## Steps to Set in Vercel
