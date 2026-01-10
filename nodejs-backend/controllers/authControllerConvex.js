@@ -548,6 +548,7 @@ function createAuthControllerConvex({ emailService }) {
 
 // Default export
 const emailService = require('../services/emailService');
+const convexService = require('../services/convexService');
 
 // Use Convex if available, otherwise fallback to error responses
 let defaultAuthController;
