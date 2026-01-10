@@ -1,7 +1,7 @@
 // User Queries
 // Read operations for users
 
-import { query } from "./_generated/server";
+import { query } from "../_generated/server";
 import { v } from "convex/values";
 
 /**

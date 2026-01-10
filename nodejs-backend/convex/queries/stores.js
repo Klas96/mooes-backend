@@ -1,7 +1,7 @@
 // Store Queries
 // Read operations for stores
 
-import { query } from "./_generated/server";
+import { query } from "../_generated/server";
 import { v } from "convex/values";
 
 /**

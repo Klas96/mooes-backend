@@ -1,7 +1,7 @@
 // Store Mutations
 // Write operations for stores
 
-import { mutation } from "./_generated/server";
+import { mutation } from "../_generated/server";
 import { v } from "convex/values";
 
 /**
