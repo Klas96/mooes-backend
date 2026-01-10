@@ -548,9 +548,9 @@ function createAuthControllerConvex({ emailService }) {
 
 // Default export
 const emailService = require('../services/emailService');
-const convexService = require('../services/convexService');
 
 // Use Convex if available, otherwise fallback to error responses
+// Note: convexService is already imported at the top of the file
 let defaultAuthController;
 if (convexService.isAvailable()) {
   console.log('✅ Creating auth controller with Convex');
