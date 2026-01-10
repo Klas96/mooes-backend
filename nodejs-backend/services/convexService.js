@@ -45,7 +45,7 @@ class ConvexService {
 
   /**
    * Execute a Convex query
-   * @param {string} path - Query path (e.g., "users:getByEmail" or full path "queries:users:getByEmail")
+   * @param {string} path - Query path (e.g., "queries/users:getByEmail")
    * @param {object} args - Query arguments
    * @returns {Promise<any>} Query result
    */
@@ -54,14 +54,17 @@ class ConvexService {
       throw new Error('Convex client not initialized. Set CONVEX_URL environment variable.');
     }
 
-    // Build full path
+    // Convex expects paths like "queries/users:getByEmail" (file path without extension, colon, function name)
     let fullPath = path;
-    if (!path.includes(':')) {
-      // Assume it's just "functionName", prepend "queries:"
-      fullPath = `queries:${path}`;
-    } else if (!path.startsWith('queries:') && !path.startsWith('mutations:')) {
-      // Path like "users:getByEmail", prepend "queries:"
-      fullPath = `queries:${path}`;
+    if (path.includes(':')) {
+      // Path like "users:getByEmail" -> convert to "queries/users:getByEmail"
+      if (!path.startsWith('queries/') && !path.startsWith('mutations/')) {
+        const [module, func] = path.split(':');
+        fullPath = `queries/${module}:${func}`;
+      }
+    } else {
+      // Just function name, assume queries directory
+      fullPath = `queries/${path}`;
     }
 
     try {
@@ -74,7 +77,7 @@ class ConvexService {
 
   /**
    * Execute a Convex mutation
-   * @param {string} path - Mutation path (e.g., "users:create" or full path "mutations:users:create")
+   * @param {string} path - Mutation path (e.g., "mutations/users:create")
    * @param {object} args - Mutation arguments
    * @returns {Promise<any>} Mutation result
    */
@@ -83,14 +86,17 @@ class ConvexService {
       throw new Error('Convex client not initialized. Set CONVEX_URL environment variable.');
     }
 
-    // Build full path
+    // Convex expects paths like "mutations/users:create" (file path without extension, colon, function name)
     let fullPath = path;
-    if (!path.includes(':')) {
-      // Assume it's just "functionName", prepend "mutations:"
-      fullPath = `mutations:${path}`;
-    } else if (!path.startsWith('queries:') && !path.startsWith('mutations:')) {
-      // Path like "users:create", prepend "mutations:"
-      fullPath = `mutations:${path}`;
+    if (path.includes(':')) {
+      // Path like "users:create" -> convert to "mutations/users:create"
+      if (!path.startsWith('queries/') && !path.startsWith('mutations/')) {
+        const [module, func] = path.split(':');
+        fullPath = `mutations/${module}:${func}`;
+      }
+    } else {
+      // Just function name, assume mutations directory
+      fullPath = `mutations/${path}`;
     }
 
     try {
@@ -103,7 +109,7 @@ class ConvexService {
 
   /**
    * Execute a Convex action
-   * @param {string} path - Action path (e.g., "users:sendEmail")
+   * @param {string} path - Action path (e.g., "actions/users:sendEmail")
    * @param {object} args - Action arguments
    * @returns {Promise<any>} Action result
    */
@@ -112,10 +118,15 @@ class ConvexService {
       throw new Error('Convex client not initialized. Set CONVEX_URL environment variable.');
     }
 
-    // Build full path
+    // Convex expects paths like "actions/users:sendEmail" (file path without extension, colon, function name)
     let fullPath = path;
-    if (!path.startsWith('actions:')) {
-      fullPath = `actions:${path}`;
+    if (path.includes(':')) {
+      if (!path.startsWith('actions/')) {
+        const [module, func] = path.split(':');
+        fullPath = `actions/${module}:${func}`;
+      }
+    } else {
+      fullPath = `actions/${path}`;
     }
 
     try {
