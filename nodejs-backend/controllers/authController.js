@@ -745,22 +745,27 @@ if (UserModel && UserProfileModel && UserModel.sequelize) {
   console.error('⚠️ UserProfileModel:', !!UserProfileModel);
   console.error('⚠️ UserModel.sequelize:', !!UserModel?.sequelize);
   console.error('⚠️ DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
-  // Create a dummy controller that returns errors
+  // Create a dummy controller that returns errors for all methods
+  const errorResponse = (req, res) => {
+    console.error(`❌ ${req.method} ${req.path} called but controller not initialized - models not available`);
+    return res.status(503).json({ 
+      error: 'Database connection not available. Please try again in a few moments.',
+      code: 'DATABASE_CONNECTION_ERROR'
+    });
+  };
+  
   defaultAuthController = {
-    login: async (req, res) => {
-      console.error('❌ Login called but controller not initialized - models not available');
-      return res.status(503).json({ 
-        error: 'Database connection not available. Please try again in a few moments.',
-        code: 'DATABASE_CONNECTION_ERROR'
-      });
-    },
-    register: async (req, res) => {
-      return res.status(503).json({ 
-        error: 'Database connection not available. Please try again in a few moments.',
-        code: 'DATABASE_CONNECTION_ERROR'
-      });
-    },
-    // Add other methods as needed...
+    register: errorResponse,
+    verifyEmail: errorResponse,
+    resendVerification: errorResponse,
+    login: errorResponse,
+    googleLogin: errorResponse,
+    logout: errorResponse,
+    getMe: errorResponse,
+    deleteAccount: errorResponse,
+    requestPasswordReset: errorResponse,
+    resetPassword: errorResponse,
+    updateFcmToken: errorResponse,
   };
 }
 
