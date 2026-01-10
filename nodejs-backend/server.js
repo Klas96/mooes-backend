@@ -229,18 +229,52 @@ app.use(cors({
   maxAge: 86400 // 24 hours
 }));
 
-// Determine uploads directory - use UPLOADS_DIR env var if set, otherwise relative path
-const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
+// Determine if we're on Vercel
+const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
 
-// Create uploads directory if it doesn't exist
-try {
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-    console.log(`📁 Created uploads directory: ${uploadsDir}`);
+// Only set up local file serving if not on Vercel
+if (!isVercel) {
+  // Determine uploads directory - use UPLOADS_DIR env var if set, otherwise relative path
+  const uploadsDir = process.env.UPLOADS_DIR || path.join(__dirname, 'uploads');
+
+  // Create uploads directory if it doesn't exist
+  try {
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+      console.log(`📁 Created uploads directory: ${uploadsDir}`);
+    }
+  } catch (error) {
+    console.log('⚠️  Could not create uploads directory:', error.message);
+    console.log('   This is normal on serverless platforms - using Cloudinary instead');
   }
-} catch (error) {
-  console.log('⚠️  Could not create uploads directory:', error.message);
-  console.log('   This is normal on App Engine - using Google Cloud Storage instead');
+
+  // Serve static files from uploads directory (with CORS from middleware above)
+  // Use the same directory where files are actually saved
+  app.use('/uploads', express.static(uploadsDir, {
+    setHeaders: (res, filePath) => {
+      // Set CORS headers for images
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      
+      // Set appropriate content type based on file extension
+      if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+        res.setHeader('Content-Type', 'image/jpeg');
+      } else if (filePath.endsWith('.png')) {
+        res.setHeader('Content-Type', 'image/png');
+      } else if (filePath.endsWith('.gif')) {
+        res.setHeader('Content-Type', 'image/gif');
+      } else if (filePath.endsWith('.webp')) {
+        res.setHeader('Content-Type', 'image/webp');
+      } else if (filePath.endsWith('.svg')) {
+        res.setHeader('Content-Type', 'image/svg+xml');
+      }
+    }
+  }));
+
+  console.log(`📂 Serving static files from: ${uploadsDir}`);
+} else {
+  console.log('🌐 Running on Vercel - using Cloudinary for file storage');
+  // On Vercel, files are served from Cloudinary CDN, so we don't need local static serving
+  // The /uploads route will be handled by a redirect or proxy if needed
 }
 
 // Log all requests for debugging
@@ -251,30 +285,6 @@ app.use((req, res, next) => {
   }
   next();
 });
-
-// Serve static files from uploads directory (with CORS from middleware above)
-// Use the same directory where files are actually saved
-app.use('/uploads', express.static(uploadsDir, {
-  setHeaders: (res, filePath) => {
-    // Set CORS headers for images
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    
-    // Set appropriate content type based on file extension
-    if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
-      res.setHeader('Content-Type', 'image/jpeg');
-    } else if (filePath.endsWith('.png')) {
-      res.setHeader('Content-Type', 'image/png');
-    } else if (filePath.endsWith('.gif')) {
-      res.setHeader('Content-Type', 'image/gif');
-    } else if (filePath.endsWith('.webp')) {
-      res.setHeader('Content-Type', 'image/webp');
-    } else if (filePath.endsWith('.svg')) {
-      res.setHeader('Content-Type', 'image/svg+xml');
-    }
-  }
-}));
-
-console.log(`📂 Serving static files from: ${uploadsDir}`);
 
 // Routes - Register BEFORE starting server
 // Add request logging middleware
@@ -416,8 +426,11 @@ const getCertificatePaths = () => {
   return { certPath, keyPath };
 };
 
-// Only start the server if not in test mode
-if (process.env.NODE_ENV !== 'test') {
+// Only start the server if not in test mode and not on Vercel
+// Vercel uses serverless functions, so we don't need to start an HTTP server
+// Note: isVercel is already declared at line 233
+
+if (process.env.NODE_ENV !== 'test' && !isVercel) {
   // Authenticate database connection before starting server
   (async () => {
     try {
