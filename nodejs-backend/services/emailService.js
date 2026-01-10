@@ -17,18 +17,25 @@ class EmailService {
     }
 
     // Configure email transporter
+    // For Loopia, try both TLS and STARTTLS if authentication fails
     this.transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST || 'mailcluster.loopia.se',
-      port: process.env.EMAIL_PORT || 587,
+      port: parseInt(process.env.EMAIL_PORT || '587', 10),
       secure: process.env.EMAIL_SECURE === 'true' || false, // true for 465, false for other ports
       auth: {
         user: process.env.EMAIL_USER,
         pass: emailPassword
       },
       tls: {
-        rejectUnauthorized: false
-      }
+        rejectUnauthorized: false,
+        ciphers: 'SSLv3' // Some servers require specific ciphers
+      },
+      debug: process.env.NODE_ENV === 'development', // Enable debug in development
+      logger: process.env.NODE_ENV === 'development' // Enable logger in development
     });
+    
+    // Verify connection on startup (optional, can be commented out if causing issues)
+    // this.transporter.verify().catch(console.error);
 
     console.log('Email service initialized with:', {
       host: process.env.EMAIL_HOST || 'mailcluster.loopia.se',

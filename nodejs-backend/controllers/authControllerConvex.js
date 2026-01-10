@@ -93,16 +93,20 @@ function createAuthControllerConvex({ emailService }) {
 
       // Send verification email
       console.log(`📧 Attempting to send verification email to ${email}...`);
-      const emailSent = await emailService.sendVerificationEmail(
-        email, 
-        firstName, 
-        verificationCode
-      );
-
-      if (!emailSent) {
-        console.error(`❌ Failed to send verification email to ${email}`);
-      } else {
-        console.log(`✅ Verification email sent successfully to ${email}`);
+      let emailSent = false;
+      try {
+        emailSent = await emailService.sendVerificationEmail(
+          email, 
+          firstName, 
+          verificationCode
+        );
+        if (emailSent) {
+          console.log(`✅ Verification email sent successfully to ${email}`);
+        }
+      } catch (emailError) {
+        console.error(`❌ Failed to send verification email to ${email}:`, emailError.message);
+        // Don't fail registration if email fails - user can request resend later
+        emailSent = false;
       }
 
       // Get created user
