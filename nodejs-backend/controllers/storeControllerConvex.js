@@ -71,6 +71,28 @@ const createStore = async (req, res) => {
       });
     }
 
+    // First, verify the user exists in Convex
+    console.log('🔍 Verifying user exists in Convex with userId:', userId);
+    try {
+      const user = await convexService.query('users:getById', { id: userId });
+      if (!user) {
+        console.error('❌ User not found in Convex:', userId);
+        return res.status(404).json({
+          success: false,
+          message: 'User not found. Please ensure you are logged in with a Convex account.',
+          error: 'USER_NOT_FOUND'
+        });
+      }
+      console.log('✅ User verified in Convex:', user.email);
+    } catch (userCheckError) {
+      console.error('❌ Error verifying user in Convex:', userCheckError);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to verify user account. Please log in again.',
+        error: 'USER_VERIFICATION_FAILED'
+      });
+    }
+
     // Check if user already has a store
     console.log('🔍 Checking for existing store with userId:', userId);
     const existingStore = await convexService.query('stores:getByUserId', { userId });
