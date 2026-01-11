@@ -507,7 +507,9 @@ const getController = (req) => {
 // Export wrapper functions that select controller at runtime
 module.exports = {
   createStore: async (req, res) => {
+    console.log('🚀 createStore called, req.user:', req.user ? { id: req.user.id, email: req.user.email } : 'null');
     const controller = getController(req);
+    console.log('📦 Selected controller type:', controller === sequelizeControllerCache ? 'Sequelize' : (controller === convexControllerCache ? 'Convex' : 'Default'));
     return controller.createStore(req, res);
   },
   getStoreById: async (req, res) => {
