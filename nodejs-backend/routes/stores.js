@@ -3,8 +3,8 @@ const multer = require('multer');
 const path = require('path');
 const { body } = require('express-validator');
 const { protect } = require('../middleware/auth');
-const { Store, User } = require('../models');
-const storeController = require('../controllers/storeController')({ Store, User });
+// Store controller exports methods directly (uses Convex or Sequelize automatically)
+const storeController = require('../controllers/storeController');
 
 const router = express.Router();
 
