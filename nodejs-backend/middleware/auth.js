@@ -39,9 +39,10 @@ const protect = async (req, res, next) => {
       req.user = null;
       
       // Try Sequelize first (matches login behavior)
+      // Use both top-level User and require to handle different scenarios
       try {
         const models = require('../models');
-        const UserModel = models.User;
+        const UserModel = models.User || User; // Fallback to top-level User if models.User is empty
         
         // Check if UserModel is a valid Sequelize model (has sequelize property)
         const isSequelizeModel = UserModel && 
