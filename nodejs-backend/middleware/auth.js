@@ -58,7 +58,9 @@ const protect = async (req, res, next) => {
             console.warn('Database connection check failed, trying anyway:', authError.message);
           }
           
-          req.user = await UserModel.findByPk(userId, {
+          // Use findOne to match login behavior exactly
+          req.user = await UserModel.findOne({ 
+            where: { id: userId },
             attributes: { exclude: ['password'] }
           });
           if (req.user) {
