@@ -141,11 +141,18 @@ const protect = async (req, res, next) => {
       console.error('Error stack:', error.stack);
       
       // Check if it's a JWT error
-      if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      if (error.name === 'TokenExpiredError') {
+        return res.status(401).json({ 
+          error: 'Not authorized, token expired',
+          code: 'TOKEN_EXPIRED',
+          message: 'Your session has expired. Please log in again.'
+        });
+      }
+      if (error.name === 'JsonWebTokenError') {
         return res.status(401).json({ 
           error: 'Not authorized, token invalid',
           code: 'TOKEN_INVALID',
-          message: 'Your session has expired. Please log in again.'
+          message: 'Invalid authentication token. Please log in again.'
         });
       }
       
