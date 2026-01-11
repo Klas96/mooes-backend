@@ -40,8 +40,10 @@ const getApp = async () => {
 // Handler function for Vercel serverless functions
 const handler = async (req, res) => {
   // Set CORS headers immediately for all requests (before any async operations)
+  // Note: Cannot use Access-Control-Allow-Credentials with wildcard origin
+  // Since we use JWT tokens (not cookies), we don't need credentials
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  // Do NOT set Access-Control-Allow-Credentials when using wildcard origin
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
   
@@ -58,9 +60,8 @@ const handler = async (req, res) => {
     return expressApp(req, res);
   } catch (error) {
     console.error('Handler error:', error);
-    // Ensure CORS headers are set even on errors
+    // Ensure CORS headers are set even on errors (without credentials)
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
     
     // Return appropriate error response
     const statusCode = error.status || 500;
