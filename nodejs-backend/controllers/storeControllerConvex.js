@@ -50,13 +50,24 @@ const createStore = async (req, res) => {
       userIdType: typeof userId,
       userEmail: req.user.email,
       hasUserId: !!req.user.id,
-      hasUser_id: !!req.user._id
+      hasUser_id: !!req.user._id,
+      reqUser: req.user
     });
 
     if (!userId) {
       return res.status(400).json({
         success: false,
         message: 'User ID is required'
+      });
+    }
+
+    // Validate that userId is a Convex ID (starts with letter, not a number)
+    if (typeof userId === 'number' || (typeof userId === 'string' && /^\d+$/.test(userId))) {
+      console.error('❌ Invalid user ID format - expected Convex ID, got numeric ID:', userId);
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid user ID format. Please log in again to get a fresh token.',
+        error: 'INVALID_USER_ID_FORMAT'
       });
     }
 
