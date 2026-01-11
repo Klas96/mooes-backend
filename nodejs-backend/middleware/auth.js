@@ -43,22 +43,41 @@ const protect = async (req, res, next) => {
         const models = require('../models');
         const UserModel = models.User;
         
-        if (UserModel && typeof UserModel.findByPk === 'function') {
+        // Check if UserModel is a valid Sequelize model (has sequelize property)
+        const isSequelizeModel = UserModel && 
+                                typeof UserModel.findByPk === 'function' && 
+                                UserModel.sequelize && 
+                                typeof UserModel.sequelize.authenticate === 'function';
+        
+        if (isSequelizeModel) {
           console.log('Looking up user via Sequelize, ID:', userId, 'Type:', typeof userId);
+          // Ensure database connection is active
+          try {
+            await UserModel.sequelize.authenticate();
+          } catch (authError) {
+            console.warn('Database connection check failed, trying anyway:', authError.message);
+          }
+          
           req.user = await UserModel.findByPk(userId, {
             attributes: { exclude: ['password'] }
           });
           if (req.user) {
             console.log('User found via Sequelize:', req.user.email);
           } else {
-            console.log('User not found via Sequelize');
+            console.log('User not found via Sequelize for ID:', userId);
           }
         } else {
-          console.log('UserModel not available or findByPk not a function');
+          console.log('UserModel not a valid Sequelize model:', {
+            hasUserModel: !!UserModel,
+            hasFindByPk: typeof UserModel?.findByPk === 'function',
+            hasSequelize: !!UserModel?.sequelize,
+            hasAuthenticate: typeof UserModel?.sequelize?.authenticate === 'function'
+          });
         }
       } catch (sequelizeError) {
         console.error('Sequelize user lookup failed:', sequelizeError.message);
-        console.error('Sequelize error details:', sequelizeError);
+        console.error('Sequelize error name:', sequelizeError.name);
+        console.error('Sequelize error stack:', sequelizeError.stack);
         // Continue to Convex fallback
       }
       
