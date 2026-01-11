@@ -453,6 +453,10 @@ if (sequelizeAvailable) {
   };
 }
 
+// Cache controllers to avoid recreating on every request
+let sequelizeControllerCache = null;
+let convexControllerCache = null;
+
 // Runtime wrapper that selects controller based on user authentication method
 // If user has numeric ID, use Sequelize; if string Convex ID, use Convex
 const getController = (req) => {
@@ -462,27 +466,40 @@ const getController = (req) => {
     const isNumericId = typeof userId === 'number' || (typeof userId === 'string' && /^\d+$/.test(userId));
     const isConvexId = typeof userId === 'string' && /^[a-z]/.test(userId);
     
+    // Runtime check if Sequelize is actually available (models might load asynchronously)
+    const hasSequelizeRuntime = StoreModel && UserModel && StoreModel.sequelize && typeof StoreModel.findOne === 'function';
+    
     console.log('🔍 Store controller selection:', {
       userId,
       userIdType: typeof userId,
       isNumericId,
       isConvexId,
       sequelizeAvailable,
+      hasSequelizeRuntime,
       convexAvailable: convexService.isAvailable()
     });
     
-    // If user has numeric ID and Sequelize is available, use Sequelize
-    if (isNumericId && sequelizeAvailable) {
-      return createStoreController({ Store: StoreModel, User: UserModel });
+    // If user has numeric ID and Sequelize is available at runtime, use Sequelize
+    if (isNumericId && hasSequelizeRuntime) {
+      if (!sequelizeControllerCache) {
+        console.log('✅ Creating Sequelize store controller (cached)');
+        sequelizeControllerCache = createStoreController({ Store: StoreModel, User: UserModel });
+      }
+      return sequelizeControllerCache;
     }
     // If user has Convex ID or Sequelize not available, use Convex
-    if (isConvexId || !sequelizeAvailable) {
+    if (isConvexId || !hasSequelizeRuntime) {
       if (convexService.isAvailable()) {
-        return require('./storeControllerConvex');
+        if (!convexControllerCache) {
+          console.log('✅ Loading Convex store controller (cached)');
+          convexControllerCache = require('./storeControllerConvex');
+        }
+        return convexControllerCache;
       }
     }
   }
   
+  console.log('⚠️ Falling back to default controller');
   // Fallback to default controller
   return defaultStoreController;
 };
