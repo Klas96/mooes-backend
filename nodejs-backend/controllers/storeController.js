@@ -474,24 +474,36 @@ const getController = (req) => {
       userIdType: typeof userId,
       isNumericId,
       isConvexId,
-      sequelizeAvailable,
       hasSequelizeRuntime,
+      StoreModelExists: !!StoreModel,
+      UserModelExists: !!UserModel,
+      StoreModelHasSequelize: !!StoreModel?.sequelize,
+      StoreModelHasFindOne: typeof StoreModel?.findOne === 'function',
       convexAvailable: convexService.isAvailable()
     });
     
-    // If user has numeric ID and Sequelize is available at runtime, use Sequelize
-    if (isNumericId && hasSequelizeRuntime) {
-      if (!sequelizeControllerCache) {
-        console.log('✅ Creating Sequelize store controller (cached)');
-        sequelizeControllerCache = createStoreController({ Store: StoreModel, User: UserModel });
+    // PRIORITY: If user has numeric ID, ALWAYS try Sequelize first (user was authenticated via Sequelize)
+    if (isNumericId) {
+      if (hasSequelizeRuntime) {
+        if (!sequelizeControllerCache) {
+          console.log('✅ Creating Sequelize store controller (cached) - user has numeric ID');
+          sequelizeControllerCache = createStoreController({ Store: StoreModel, User: UserModel });
+        }
+        return sequelizeControllerCache;
+      } else {
+        console.error('⚠️ User has numeric ID but Sequelize runtime check failed!');
+        console.error('   StoreModel:', StoreModel ? 'EXISTS' : 'NULL');
+        console.error('   UserModel:', UserModel ? 'EXISTS' : 'NULL');
+        console.error('   StoreModel.sequelize:', StoreModel?.sequelize ? 'EXISTS' : 'NULL');
+        console.error('   StoreModel.findOne:', typeof StoreModel?.findOne);
       }
-      return sequelizeControllerCache;
     }
-    // If user has Convex ID or Sequelize not available, use Convex
-    if (isConvexId || !hasSequelizeRuntime) {
+    
+    // If user has Convex ID, use Convex
+    if (isConvexId) {
       if (convexService.isAvailable()) {
         if (!convexControllerCache) {
-          console.log('✅ Loading Convex store controller (cached)');
+          console.log('✅ Loading Convex store controller (cached) - user has Convex ID');
           convexControllerCache = require('./storeControllerConvex');
         }
         return convexControllerCache;
