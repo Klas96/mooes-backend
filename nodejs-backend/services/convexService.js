@@ -71,7 +71,14 @@ class ConvexService {
       return await this.client.query(fullPath, args);
     } catch (error) {
       console.error('Convex query error:', error);
-      throw new Error(`Convex query failed: ${error.message}`);
+      console.error('  - Path:', fullPath);
+      console.error('  - Args:', args);
+      console.error('  - Error name:', error.name);
+      console.error('  - Error message:', error.message);
+      console.error('  - Error stack:', error.stack);
+      // Preserve more error details
+      const errorMessage = error.message || error.toString();
+      throw new Error(`Convex query failed: ${errorMessage}`);
     }
   }
 
@@ -103,7 +110,14 @@ class ConvexService {
       return await this.client.mutation(fullPath, args);
     } catch (error) {
       console.error('Convex mutation error:', error);
-      throw new Error(`Convex mutation failed: ${error.message}`);
+      console.error('  - Path:', fullPath);
+      console.error('  - Args:', args);
+      console.error('  - Error name:', error.name);
+      console.error('  - Error message:', error.message);
+      console.error('  - Error stack:', error.stack);
+      // Preserve more error details
+      const errorMessage = error.message || error.toString();
+      throw new Error(`Convex mutation failed: ${errorMessage}`);
     }
   }
 
