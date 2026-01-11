@@ -35,11 +35,7 @@ const protect = async (req, res, next) => {
       }
       
       // Try to find user - support both Sequelize and Convex
-      // Try Sequelize first (since login uses Sequelize), then Convex as fallback
-      req.user = null;
-      
-      // Try to find user - support both Sequelize and Convex
-      // Re-require models inside try-catch to handle any loading errors
+      // Try Sequelize first (matches login behavior), then Convex as fallback
       req.user = null;
       
       // Try Sequelize first (matches login behavior)
