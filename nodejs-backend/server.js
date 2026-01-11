@@ -106,7 +106,10 @@ try {
 
 try {
   storeRoutes = require('./routes/stores');
+  console.log('✅ Store routes module loaded successfully');
 } catch (e) {
+  console.error('❌ Error loading store routes:', e.message);
+  console.error('Stack trace:', e.stack);
   console.warn('⚠️  stores routes not found, skipping...');
   storeRoutes = null;
 }
