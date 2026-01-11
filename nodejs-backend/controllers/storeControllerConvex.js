@@ -123,25 +123,24 @@ const createStore = async (req, res) => {
       });
     }
 
-    console.log('🔍 Creating store with data:', {
+    // Prepare mutation data - Convex doesn't accept null, use undefined instead
+    const mutationData = {
       userId,
       storeName,
-      description,
-      location,
-      website
-    });
-
-    const storeId = await convexService.mutation('stores:create', {
-      userId,
-      storeName,
-      description: description || null,
-      location: location || null,
-      website: website || null,
-      latitude: latitude || null,
-      longitude: longitude || null,
-      logo: logo || null,
       isActive: true
-    });
+    };
+    
+    // Only include optional fields if they have values (not null/empty)
+    if (description) mutationData.description = description;
+    if (location) mutationData.location = location;
+    if (website) mutationData.website = website;
+    if (latitude !== null && latitude !== undefined) mutationData.latitude = latitude;
+    if (longitude !== null && longitude !== undefined) mutationData.longitude = longitude;
+    if (logo) mutationData.logo = logo;
+    
+    console.log('🔍 Creating store with data:', mutationData);
+
+    const storeId = await convexService.mutation('stores:create', mutationData);
 
     console.log('✅ Store created, ID:', storeId);
 
@@ -440,9 +439,52 @@ const uploadProfilePicture = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Get all active stores (public)
+ * @route   GET /api/stores
+ * @access  Public
+ */
+const getAllStores = async (req, res) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit) : 100;
+    const offset = req.query.offset ? parseInt(req.query.offset) : 0;
+
+    console.log(`[GET /api/stores] Fetching all active stores (limit: ${limit}, offset: ${offset})`);
+
+    const stores = await convexService.query('stores:listActive', {
+      limit,
+      offset
+    });
+
+    if (!stores || stores.length === 0) {
+      console.log('[GET /api/stores] No stores found');
+      return res.json({
+        success: true,
+        stores: [],
+        count: 0
+      });
+    }
+
+    // Format all stores
+    const formattedStores = stores.map(store => formatStore(store));
+
+    console.log(`[GET /api/stores] Found ${formattedStores.length} stores`);
+
+    res.json({
+      success: true,
+      stores: formattedStores,
+      count: formattedStores.length
+    });
+  } catch (error) {
+    console.error('Error fetching all stores:', error);
+    return handleError(error, res);
+  }
+};
+
 module.exports = {
   createStore,
   getStoreById,
+  getAllStores,
   getMyStore,
   updateMyStore,
   uploadProfilePicture
