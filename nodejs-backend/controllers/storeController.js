@@ -390,5 +390,56 @@ function createStoreController({ Store, User }) {
   };
 }
 
-module.exports = createStoreController;
+// Default export for app use
+// Use Sequelize if available (for users authenticated via Sequelize), otherwise Convex
+const convexService = require('../services/convexService');
+const { Store: StoreModel, User: UserModel } = require('../models');
+
+let defaultStoreController;
+
+// Check if Sequelize is available and models are valid
+const sequelizeAvailable = StoreModel && UserModel && StoreModel.sequelize && typeof StoreModel.findOne === 'function';
+
+if (sequelizeAvailable) {
+  console.log('✅ Using Sequelize-based store controller');
+  // Use Sequelize version (matches auth middleware behavior)
+  defaultStoreController = createStoreController({ Store: StoreModel, User: UserModel });
+} else if (convexService.isAvailable()) {
+  console.log('✅ Using Convex-based store controller');
+  // Use Convex version
+  defaultStoreController = require('./storeControllerConvex');
+} else {
+  console.error('⚠️ ERROR: Cannot create store controller - neither Convex nor Sequelize available');
+  console.error('⚠️ CONVEX_URL:', process.env.CONVEX_URL ? 'SET' : 'NOT SET');
+  console.error('⚠️ DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+  console.error('⚠️ StoreModel:', StoreModel ? 'EXISTS' : 'MISSING');
+  console.error('⚠️ UserModel:', UserModel ? 'EXISTS' : 'MISSING');
+  console.error('⚠️ StoreModel.sequelize:', StoreModel?.sequelize ? 'EXISTS' : 'MISSING');
+  // Create a dummy controller that returns errors for all methods
+  const errorResponse = (req, res) => {
+    console.error(`❌ ${req.method} ${req.path} called but no database available`);
+    return res.status(503).json({ 
+      success: false,
+      message: 'Database connection not available. Please try again in a few moments.',
+      error: 'DATABASE_CONNECTION_ERROR'
+    });
+  };
+  
+  defaultStoreController = {
+    createStore: errorResponse,
+    getStoreById: errorResponse,
+    getMyStore: errorResponse,
+    updateMyStore: errorResponse,
+    uploadProfilePicture: errorResponse,
+  };
+}
+
+// Export default instance's methods for router destructuring
+module.exports = {
+  createStore: defaultStoreController.createStore,
+  getStoreById: defaultStoreController.getStoreById,
+  getMyStore: defaultStoreController.getMyStore,
+  updateMyStore: defaultStoreController.updateMyStore,
+  uploadProfilePicture: defaultStoreController.uploadProfilePicture,
+};
 
