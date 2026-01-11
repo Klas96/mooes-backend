@@ -16,14 +16,56 @@ const protect = async (req, res, next) => {
       console.log('Request path:', req.path);
 
       // Verify token
+      if (!process.env.JWT_SECRET) {
+        console.error('JWT_SECRET is not configured');
+        return res.status(500).json({ 
+          error: 'Server configuration error',
+          code: 'JWT_SECRET_MISSING',
+          message: 'JWT_SECRET environment variable is not set.'
+        });
+      }
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       console.log('Token decoded successfully, user ID:', decoded.userId || decoded.id);
 
       // Get user from token - check for both userId and id for compatibility
       const userId = decoded.userId || decoded.id;
-      req.user = await User.findByPk(userId, {
-        attributes: { exclude: ['password'] }
-      });
+      
+      // Try to find user - support both Sequelize and Convex
+      try {
+        // Check if User model has Sequelize methods (findByPk)
+        if (User && User.findByPk) {
+          req.user = await User.findByPk(userId, {
+            attributes: { exclude: ['password'] }
+          });
+        } else if (process.env.CONVEX_URL) {
+          // Use Convex to get user
+          const convexService = require('../services/convexService');
+          req.user = await convexService.query('users:getById', { id: userId.toString() });
+          // Remove password from Convex user object
+          if (req.user && req.user.password) {
+            delete req.user.password;
+          }
+        } else {
+          throw new Error('No database available');
+        }
+      } catch (dbError) {
+        console.error('Error fetching user from database:', dbError.message);
+        // Try Convex as fallback
+        if (process.env.CONVEX_URL) {
+          try {
+            const convexService = require('../services/convexService');
+            req.user = await convexService.query('users:getById', { id: userId.toString() });
+            if (req.user && req.user.password) {
+              delete req.user.password;
+            }
+          } catch (convexError) {
+            console.error('Convex fallback also failed:', convexError.message);
+            req.user = null;
+          }
+        } else {
+          req.user = null;
+        }
+      }
       
       if (!req.user) {
         console.log('User not found in database for ID:', userId);
@@ -63,6 +105,10 @@ const optionalAuth = async (req, res, next) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
+      if (!process.env.JWT_SECRET) {
+        // Skip optional auth if JWT_SECRET is not configured
+        return next();
+      }
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       const userId = decoded.userId || decoded.id;
       req.user = await User.findByPk(userId, {
@@ -98,6 +144,9 @@ const requireProfile = async (req, res, next) => {
 
 // Generate JWT token
 const generateToken = (id) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is not set. Please configure it in your Vercel environment variables.');
+  }
   return jwt.sign({ userId: id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || '7d'
   });
