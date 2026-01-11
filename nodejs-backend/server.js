@@ -214,7 +214,8 @@ app.use(cors({
     console.log('CORS blocked origin:', origin);
     callback(new Error('Not allowed by CORS'));
   },
-  credentials: true,
+  // Note: credentials: true removed because we use JWT tokens (not cookies)
+  // Cannot use credentials with wildcard origin anyway
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
     'Content-Type', 
