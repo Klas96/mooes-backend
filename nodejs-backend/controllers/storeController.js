@@ -398,48 +398,23 @@ function createStoreController({ Store, User }) {
 }
 
 // Default export for app use
-// Use Sequelize if available (for users authenticated via Sequelize), otherwise Convex
+// Always use Convex (Convex is the only database)
 const convexService = require('../services/convexService');
-const { Store: StoreModel, User: UserModel, sequelize } = require('../models');
 
 let defaultStoreController;
 
-// Check if Sequelize is available and models are valid
-// More lenient check - if models exist and sequelize instance exists, use Sequelize
-const hasSequelizeInstance = sequelize && typeof sequelize.authenticate === 'function';
-const hasStoreModel = StoreModel && typeof StoreModel.findOne === 'function';
-const hasUserModel = UserModel && typeof UserModel.findOne === 'function';
-const sequelizeAvailable = hasSequelizeInstance && hasStoreModel && hasUserModel;
-
-console.log('🔍 Store controller initialization check:');
-console.log('  - DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
-console.log('  - CONVEX_URL:', process.env.CONVEX_URL ? 'SET' : 'NOT SET');
-console.log('  - sequelize instance:', hasSequelizeInstance ? 'AVAILABLE' : 'MISSING');
-console.log('  - StoreModel:', hasStoreModel ? 'AVAILABLE' : 'MISSING');
-console.log('  - UserModel:', hasUserModel ? 'AVAILABLE' : 'MISSING');
-console.log('  - Sequelize available:', sequelizeAvailable ? 'YES' : 'NO');
-
-if (sequelizeAvailable) {
-  console.log('✅ Using Sequelize-based store controller');
-  // Use Sequelize version (matches auth middleware behavior)
-  defaultStoreController = createStoreController({ Store: StoreModel, User: UserModel });
-} else if (convexService.isAvailable()) {
-  console.log('✅ Using Convex-based store controller (Sequelize not available)');
-  // Use Convex version
+if (convexService.isAvailable()) {
+  console.log('✅ Using Convex-based store controller');
   defaultStoreController = require('./storeControllerConvex');
 } else {
-  console.error('⚠️ ERROR: Cannot create store controller - neither Convex nor Sequelize available');
+  console.error('⚠️ ERROR: Convex is not available');
   console.error('⚠️ CONVEX_URL:', process.env.CONVEX_URL ? 'SET' : 'NOT SET');
-  console.error('⚠️ DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
-  console.error('⚠️ StoreModel:', StoreModel ? 'EXISTS' : 'MISSING');
-  console.error('⚠️ UserModel:', UserModel ? 'EXISTS' : 'MISSING');
-  console.error('⚠️ StoreModel.sequelize:', StoreModel?.sequelize ? 'EXISTS' : 'MISSING');
   // Create a dummy controller that returns errors for all methods
   const errorResponse = (req, res) => {
-    console.error(`❌ ${req.method} ${req.path} called but no database available`);
+    console.error(`❌ ${req.method} ${req.path} called but Convex is not available`);
     return res.status(503).json({ 
       success: false,
-      message: 'Database connection not available. Please try again in a few moments.',
+      message: 'Database connection not available. Please configure CONVEX_URL.',
       error: 'DATABASE_CONNECTION_ERROR'
     });
   };
@@ -453,92 +428,12 @@ if (sequelizeAvailable) {
   };
 }
 
-// Cache controllers to avoid recreating on every request
-let sequelizeControllerCache = null;
-let convexControllerCache = null;
-
-// Runtime wrapper that selects controller based on user authentication method
-// If user has numeric ID, use Sequelize; if string Convex ID, use Convex
-const getController = (req) => {
-  // Check if user has numeric ID (Sequelize) or Convex ID (string starting with letter)
-  if (req.user && req.user.id) {
-    const userId = req.user.id;
-    const isNumericId = typeof userId === 'number' || (typeof userId === 'string' && /^\d+$/.test(userId));
-    const isConvexId = typeof userId === 'string' && /^[a-z]/.test(userId);
-    
-    // Runtime check if Sequelize is actually available (models might load asynchronously)
-    const hasSequelizeRuntime = StoreModel && UserModel && StoreModel.sequelize && typeof StoreModel.findOne === 'function';
-    
-    console.log('🔍 Store controller selection:', {
-      userId,
-      userIdType: typeof userId,
-      isNumericId,
-      isConvexId,
-      hasSequelizeRuntime,
-      StoreModelExists: !!StoreModel,
-      UserModelExists: !!UserModel,
-      StoreModelHasSequelize: !!StoreModel?.sequelize,
-      StoreModelHasFindOne: typeof StoreModel?.findOne === 'function',
-      convexAvailable: convexService.isAvailable()
-    });
-    
-    // PRIORITY: If user has numeric ID, ALWAYS try Sequelize first (user was authenticated via Sequelize)
-    if (isNumericId) {
-      if (hasSequelizeRuntime) {
-        if (!sequelizeControllerCache) {
-          console.log('✅ Creating Sequelize store controller (cached) - user has numeric ID');
-          sequelizeControllerCache = createStoreController({ Store: StoreModel, User: UserModel });
-        }
-        return sequelizeControllerCache;
-      } else {
-        console.error('⚠️ User has numeric ID but Sequelize runtime check failed!');
-        console.error('   StoreModel:', StoreModel ? 'EXISTS' : 'NULL');
-        console.error('   UserModel:', UserModel ? 'EXISTS' : 'NULL');
-        console.error('   StoreModel.sequelize:', StoreModel?.sequelize ? 'EXISTS' : 'NULL');
-        console.error('   StoreModel.findOne:', typeof StoreModel?.findOne);
-      }
-    }
-    
-    // If user has Convex ID, use Convex
-    if (isConvexId) {
-      if (convexService.isAvailable()) {
-        if (!convexControllerCache) {
-          console.log('✅ Loading Convex store controller (cached) - user has Convex ID');
-          convexControllerCache = require('./storeControllerConvex');
-        }
-        return convexControllerCache;
-      }
-    }
-  }
-  
-  console.log('⚠️ Falling back to default controller');
-  // Fallback to default controller
-  return defaultStoreController;
-};
-
-// Export wrapper functions that select controller at runtime
+// Export Convex controller methods directly
 module.exports = {
-  createStore: async (req, res) => {
-    console.log('🚀 createStore called, req.user:', req.user ? { id: req.user.id, email: req.user.email } : 'null');
-    const controller = getController(req);
-    console.log('📦 Selected controller type:', controller === sequelizeControllerCache ? 'Sequelize' : (controller === convexControllerCache ? 'Convex' : 'Default'));
-    return controller.createStore(req, res);
-  },
-  getStoreById: async (req, res) => {
-    const controller = getController(req);
-    return controller.getStoreById(req, res);
-  },
-  getMyStore: async (req, res) => {
-    const controller = getController(req);
-    return controller.getMyStore(req, res);
-  },
-  updateMyStore: async (req, res) => {
-    const controller = getController(req);
-    return controller.updateMyStore(req, res);
-  },
-  uploadProfilePicture: async (req, res) => {
-    const controller = getController(req);
-    return controller.uploadProfilePicture(req, res);
-  },
+  createStore: defaultStoreController.createStore,
+  getStoreById: defaultStoreController.getStoreById,
+  getMyStore: defaultStoreController.getMyStore,
+  updateMyStore: defaultStoreController.updateMyStore,
+  uploadProfilePicture: defaultStoreController.uploadProfilePicture,
 };
 
