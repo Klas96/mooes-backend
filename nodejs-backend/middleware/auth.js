@@ -45,7 +45,7 @@ const protect = async (req, res, next) => {
         
         // Check if UserModel is a valid Sequelize model (has sequelize property)
         const isSequelizeModel = UserModel && 
-                                typeof UserModel.findByPk === 'function' && 
+                                typeof UserModel.findOne === 'function' && 
                                 UserModel.sequelize && 
                                 typeof UserModel.sequelize.authenticate === 'function';
         
@@ -59,19 +59,33 @@ const protect = async (req, res, next) => {
           }
           
           // Use findOne to match login behavior exactly
+          // Try both string and number ID in case of type mismatch
+          const numericId = typeof userId === 'string' && !isNaN(userId) ? parseInt(userId, 10) : userId;
+          const stringId = typeof userId === 'number' ? userId.toString() : userId;
+          
           req.user = await UserModel.findOne({ 
-            where: { id: userId },
+            where: { id: numericId },
             attributes: { exclude: ['password'] }
           });
+          
+          // If not found with numeric, try string (or vice versa)
+          if (!req.user && stringId !== numericId) {
+            console.log('Trying alternative ID type:', typeof stringId === 'string' ? 'string' : 'number');
+            req.user = await UserModel.findOne({ 
+              where: { id: stringId },
+              attributes: { exclude: ['password'] }
+            });
+          }
+          
           if (req.user) {
-            console.log('User found via Sequelize:', req.user.email);
+            console.log('User found via Sequelize:', req.user.email, 'ID:', req.user.id);
           } else {
-            console.log('User not found via Sequelize for ID:', userId);
+            console.log('User not found via Sequelize for ID:', userId, '(tried both', numericId, 'and', stringId, ')');
           }
         } else {
           console.log('UserModel not a valid Sequelize model:', {
             hasUserModel: !!UserModel,
-            hasFindByPk: typeof UserModel?.findByPk === 'function',
+            hasFindOne: typeof UserModel?.findOne === 'function',
             hasSequelize: !!UserModel?.sequelize,
             hasAuthenticate: typeof UserModel?.sequelize?.authenticate === 'function'
           });
