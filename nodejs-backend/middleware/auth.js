@@ -31,39 +31,34 @@ const protect = async (req, res, next) => {
       const userId = decoded.userId || decoded.id;
       
       // Try to find user - support both Sequelize and Convex
-      try {
-        // Check if User model has Sequelize methods (findByPk)
-        if (User && User.findByPk) {
-          req.user = await User.findByPk(userId, {
-            attributes: { exclude: ['password'] }
-          });
-        } else if (process.env.CONVEX_URL) {
-          // Use Convex to get user
-          const convexService = require('../services/convexService');
+      // Check Convex first if available, then Sequelize
+      const convexService = require('../services/convexService');
+      req.user = null;
+      
+      if (convexService.isAvailable()) {
+        // Try Convex first
+        try {
+          console.log('Looking up user via Convex, ID:', userId);
           req.user = await convexService.query('users:getById', { id: userId.toString() });
-          // Remove password from Convex user object
           if (req.user && req.user.password) {
             delete req.user.password;
           }
-        } else {
-          throw new Error('No database available');
+          console.log('User found via Convex:', req.user ? req.user.email : 'not found');
+        } catch (convexError) {
+          console.error('Convex user lookup failed:', convexError.message);
         }
-      } catch (dbError) {
-        console.error('Error fetching user from database:', dbError.message);
-        // Try Convex as fallback
-        if (process.env.CONVEX_URL) {
-          try {
-            const convexService = require('../services/convexService');
-            req.user = await convexService.query('users:getById', { id: userId.toString() });
-            if (req.user && req.user.password) {
-              delete req.user.password;
-            }
-          } catch (convexError) {
-            console.error('Convex fallback also failed:', convexError.message);
-            req.user = null;
-          }
-        } else {
-          req.user = null;
+      }
+      
+      // Fallback to Sequelize if Convex didn't work and Sequelize is available
+      if (!req.user && User && typeof User.findByPk === 'function') {
+        try {
+          console.log('Looking up user via Sequelize, ID:', userId);
+          req.user = await User.findByPk(userId, {
+            attributes: { exclude: ['password'] }
+          });
+          console.log('User found via Sequelize:', req.user ? req.user.email : 'not found');
+        } catch (sequelizeError) {
+          console.error('Sequelize user lookup failed:', sequelizeError.message);
         }
       }
       
