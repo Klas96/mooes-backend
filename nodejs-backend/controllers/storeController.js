@@ -453,12 +453,61 @@ if (sequelizeAvailable) {
   };
 }
 
-// Export default instance's methods for router destructuring
+// Runtime wrapper that selects controller based on user authentication method
+// If user has numeric ID, use Sequelize; if string Convex ID, use Convex
+const getController = (req) => {
+  // Check if user has numeric ID (Sequelize) or Convex ID (string starting with letter)
+  if (req.user && req.user.id) {
+    const userId = req.user.id;
+    const isNumericId = typeof userId === 'number' || (typeof userId === 'string' && /^\d+$/.test(userId));
+    const isConvexId = typeof userId === 'string' && /^[a-z]/.test(userId);
+    
+    console.log('🔍 Store controller selection:', {
+      userId,
+      userIdType: typeof userId,
+      isNumericId,
+      isConvexId,
+      sequelizeAvailable,
+      convexAvailable: convexService.isAvailable()
+    });
+    
+    // If user has numeric ID and Sequelize is available, use Sequelize
+    if (isNumericId && sequelizeAvailable) {
+      return createStoreController({ Store: StoreModel, User: UserModel });
+    }
+    // If user has Convex ID or Sequelize not available, use Convex
+    if (isConvexId || !sequelizeAvailable) {
+      if (convexService.isAvailable()) {
+        return require('./storeControllerConvex');
+      }
+    }
+  }
+  
+  // Fallback to default controller
+  return defaultStoreController;
+};
+
+// Export wrapper functions that select controller at runtime
 module.exports = {
-  createStore: defaultStoreController.createStore,
-  getStoreById: defaultStoreController.getStoreById,
-  getMyStore: defaultStoreController.getMyStore,
-  updateMyStore: defaultStoreController.updateMyStore,
-  uploadProfilePicture: defaultStoreController.uploadProfilePicture,
+  createStore: async (req, res) => {
+    const controller = getController(req);
+    return controller.createStore(req, res);
+  },
+  getStoreById: async (req, res) => {
+    const controller = getController(req);
+    return controller.getStoreById(req, res);
+  },
+  getMyStore: async (req, res) => {
+    const controller = getController(req);
+    return controller.getMyStore(req, res);
+  },
+  updateMyStore: async (req, res) => {
+    const controller = getController(req);
+    return controller.updateMyStore(req, res);
+  },
+  uploadProfilePicture: async (req, res) => {
+    const controller = getController(req);
+    return controller.uploadProfilePicture(req, res);
+  },
 };
 
