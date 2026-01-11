@@ -11,6 +11,7 @@ function createStoreController({ Store, User }) {
   const createStore = async (req, res) => {
     try {
       const userId = req.user.id;
+      console.log('🔍 Creating store for user ID:', userId, 'Type:', typeof userId);
 
       // Check if user already has a store
       const existingStore = await Store.findOne({
@@ -18,6 +19,7 @@ function createStoreController({ Store, User }) {
       });
 
       if (existingStore) {
+        console.log('⚠️ User already has a store');
         return res.status(400).json({
           success: false,
           message: 'You already have a store account',
@@ -42,6 +44,7 @@ function createStoreController({ Store, User }) {
         });
       }
 
+      console.log('📝 Creating store with data:', { storeName, location, website });
       const store = await Store.create({
         userId,
         storeName,
@@ -54,13 +57,17 @@ function createStoreController({ Store, User }) {
         isActive: true
       });
 
+      console.log('✅ Store created successfully, ID:', store.id);
       res.status(201).json({
         success: true,
         message: 'Store account created successfully',
         store: store.toJSON()
       });
     } catch (error) {
-      console.error('Error creating store:', error);
+      console.error('❌ Error creating store:', error);
+      console.error('  - Error name:', error.name);
+      console.error('  - Error message:', error.message);
+      console.error('  - Error stack:', error.stack);
       res.status(500).json({
         success: false,
         message: 'Failed to create store account',
