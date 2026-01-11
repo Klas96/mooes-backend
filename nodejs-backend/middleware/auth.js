@@ -38,11 +38,18 @@ const protect = async (req, res, next) => {
       // Try Sequelize first (since login uses Sequelize), then Convex as fallback
       req.user = null;
       
+      // Try to find user - support both Sequelize and Convex
+      // Re-require models inside try-catch to handle any loading errors
+      req.user = null;
+      
       // Try Sequelize first (matches login behavior)
-      if (User && typeof User.findByPk === 'function') {
-        try {
+      try {
+        const models = require('../models');
+        const UserModel = models.User;
+        
+        if (UserModel && typeof UserModel.findByPk === 'function') {
           console.log('Looking up user via Sequelize, ID:', userId, 'Type:', typeof userId);
-          req.user = await User.findByPk(userId, {
+          req.user = await UserModel.findByPk(userId, {
             attributes: { exclude: ['password'] }
           });
           if (req.user) {
@@ -50,18 +57,20 @@ const protect = async (req, res, next) => {
           } else {
             console.log('User not found via Sequelize');
           }
-        } catch (sequelizeError) {
-          console.error('Sequelize user lookup failed:', sequelizeError.message);
-          console.error('Sequelize error details:', sequelizeError);
-          // Continue to Convex fallback
+        } else {
+          console.log('UserModel not available or findByPk not a function');
         }
+      } catch (sequelizeError) {
+        console.error('Sequelize user lookup failed:', sequelizeError.message);
+        console.error('Sequelize error details:', sequelizeError);
+        // Continue to Convex fallback
       }
       
       // Fallback to Convex if Sequelize didn't work
       if (!req.user) {
-        const convexService = require('../services/convexService');
-        if (convexService.isAvailable()) {
-          try {
+        try {
+          const convexService = require('../services/convexService');
+          if (convexService.isAvailable()) {
             console.log('Looking up user via Convex, ID:', userId, 'Type:', typeof userId);
             // Convex expects the ID as-is (it should already be a Convex ID string)
             const convexId = typeof userId === 'string' ? userId : userId.toString();
@@ -74,11 +83,11 @@ const protect = async (req, res, next) => {
             } else {
               console.log('User not found via Convex');
             }
-          } catch (convexError) {
-            console.error('Convex user lookup failed:', convexError.message);
-            console.error('Convex error details:', convexError);
-            // User not found in either database
           }
+        } catch (convexError) {
+          console.error('Convex user lookup failed:', convexError.message);
+          console.error('Convex error details:', convexError);
+          // User not found in either database
         }
       }
       
