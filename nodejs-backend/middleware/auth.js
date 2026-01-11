@@ -30,6 +30,10 @@ const protect = async (req, res, next) => {
       // Get user from token - check for both userId and id for compatibility
       const userId = decoded.userId || decoded.id;
       
+      if (!userId) {
+        throw new Error('Token does not contain user ID');
+      }
+      
       // Try to find user - support both Sequelize and Convex
       // Check Convex first if available, then Sequelize
       const convexService = require('../services/convexService');
@@ -38,14 +42,18 @@ const protect = async (req, res, next) => {
       if (convexService.isAvailable()) {
         // Try Convex first
         try {
-          console.log('Looking up user via Convex, ID:', userId);
-          req.user = await convexService.query('users:getById', { id: userId.toString() });
+          console.log('Looking up user via Convex, ID:', userId, 'Type:', typeof userId);
+          // Convex expects the ID as-is (it should already be a Convex ID string)
+          const convexId = typeof userId === 'string' ? userId : userId.toString();
+          req.user = await convexService.query('users:getById', { id: convexId });
           if (req.user && req.user.password) {
             delete req.user.password;
           }
           console.log('User found via Convex:', req.user ? req.user.email : 'not found');
         } catch (convexError) {
           console.error('Convex user lookup failed:', convexError.message);
+          console.error('Convex error details:', convexError);
+          // Don't throw - continue to Sequelize fallback
         }
       }
       
@@ -59,11 +67,12 @@ const protect = async (req, res, next) => {
           console.log('User found via Sequelize:', req.user ? req.user.email : 'not found');
         } catch (sequelizeError) {
           console.error('Sequelize user lookup failed:', sequelizeError.message);
+          console.error('Sequelize error details:', sequelizeError);
         }
       }
       
       if (!req.user) {
-        console.log('User not found in database for ID:', userId);
+        console.log('User not found in database for ID:', userId, 'Type:', typeof userId);
         return res.status(401).json({ 
           error: 'User not found',
           code: 'USER_NOT_FOUND',
@@ -74,7 +83,21 @@ const protect = async (req, res, next) => {
       console.log('User found:', req.user.email);
       next();
     } catch (error) {
-      console.error('Token verification error:', error);
+      console.error('Auth middleware error:', error);
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      
+      // Check if it's a JWT error
+      if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+        return res.status(401).json({ 
+          error: 'Not authorized, token invalid',
+          code: 'TOKEN_INVALID',
+          message: 'Your session has expired. Please log in again.'
+        });
+      }
+      
+      // Other errors (including user lookup failures)
       return res.status(401).json({ 
         error: 'Not authorized, token failed',
         code: 'TOKEN_INVALID',
