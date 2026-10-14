@@ -71,10 +71,10 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
     
-    // Don't update undefined values
+    // Don't update undefined or null values (null means clear field, which we skip)
     const cleanUpdates = {};
     for (const [key, value] of Object.entries(updates)) {
-      if (value !== undefined) {
+      if (value !== undefined && value !== null) {
         cleanUpdates[key] = value;
       }
     }

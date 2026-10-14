@@ -85,7 +85,7 @@ try {
   storeGoalRoutes = null;
 }
 // Optional routes - only load if files exist
-let userGoalProgressRoutes, couponRoutes, storeRoutes, googleFitRoutes;
+let userGoalProgressRoutes, couponRoutes, storeRoutes, googleFitRoutes, stravaRoutes;
 
 try {
   userGoalProgressRoutes = require('./routes/userGoalProgress');
@@ -119,6 +119,13 @@ try {
 } catch (e) {
   console.warn('⚠️  googleFit routes not found, skipping...');
   googleFitRoutes = null;
+}
+
+try {
+  stravaRoutes = require('./routes/strava');
+} catch (e) {
+  console.warn('⚠️  strava routes not found, skipping...');
+  stravaRoutes = null;
 }
 
 const app = express();
@@ -341,6 +348,9 @@ if (storeRoutes) {
 }
 if (googleFitRoutes) {
   app.use('/api/google-fit', googleFitRoutes);
+}
+if (stravaRoutes) {
+  app.use('/api/strava', stravaRoutes);
 }
 
 // Health check endpoint

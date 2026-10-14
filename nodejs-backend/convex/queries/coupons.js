@@ -36,7 +36,7 @@ export const getByCode = query({
 });
 
 /**
- * Get all coupons for a user
+ * Get all coupons for a user (excludes used coupons)
  */
 export const getByUserId = query({
   args: { userId: v.id("users") },
@@ -46,9 +46,12 @@ export const getByUserId = query({
       .withIndex("userId", (q) => q.eq("userId", args.userId))
       .collect();
     
+    // Filter out used coupons - they don't need to be visible
+    const unusedCoupons = coupons.filter(c => !c.isUsed);
+    
     // Include store and goal data
     const couponsWithData = await Promise.all(
-      coupons.map(async (c) => {
+      unusedCoupons.map(async (c) => {
         const store = await ctx.db.get(c.storeId);
         const goal = c.goalId ? await ctx.db.get(c.goalId) : null;
         return { ...c, store, goal };
@@ -86,20 +89,23 @@ export const getUnusedByUserId = query({
 });
 
 /**
- * Get all coupons for a store
+ * Get all coupons for a store (excludes used coupons)
  */
 export const getByStoreId = query({
   args: { storeId: v.id("stores") },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const coupons = await ctx.db
       .query("coupons")
       .withIndex("storeId", (q) => q.eq("storeId", args.storeId))
       .collect();
+    
+    // Filter out used coupons - they don't need to be visible
+    return coupons.filter(c => !c.isUsed);
   },
 });
 
 /**
- * Get coupons for a goal
+ * Get coupons for a goal (excludes used coupons)
  */
 export const getByGoalId = query({
   args: { goalId: v.id("storeGoals") },
@@ -109,9 +115,12 @@ export const getByGoalId = query({
       .withIndex("goalId", (q) => q.eq("goalId", args.goalId))
       .collect();
     
+    // Filter out used coupons - they don't need to be visible
+    const unusedCoupons = coupons.filter(c => !c.isUsed);
+    
     // Include store and user data
     const couponsWithData = await Promise.all(
-      coupons.map(async (c) => {
+      unusedCoupons.map(async (c) => {
         const store = await ctx.db.get(c.storeId);
         const user = c.userId ? await ctx.db.get(c.userId) : null;
         return { ...c, store, user };
@@ -121,4 +130,5 @@ export const getByGoalId = query({
     return couponsWithData;
   },
 });
+
 

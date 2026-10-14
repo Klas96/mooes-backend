@@ -63,3 +63,28 @@ export const emailExists = query({
   },
 });
 
+/**
+ * Get user by reset password token
+ */
+export const getByResetToken = query({
+  args: { token: v.string() },
+  handler: async (ctx, args) => {
+    // Don't search for empty tokens
+    if (!args.token || args.token.trim() === '') {
+      return null;
+    }
+    
+    const user = await ctx.db
+      .query("users")
+      .withIndex("resetPasswordToken", (q) => q.eq("resetPasswordToken", args.token))
+      .first();
+    
+    // Check if token is expired (expiry of 0 means cleared)
+    if (user && user.resetPasswordExpiry && user.resetPasswordExpiry > 0 && Date.now() <= user.resetPasswordExpiry) {
+      return user;
+    }
+    
+    return null;
+  },
+});
+

@@ -422,6 +422,7 @@ if (convexService.isAvailable()) {
   defaultStoreController = {
     createStore: errorResponse,
     getStoreById: errorResponse,
+    getAllStores: errorResponse,
     getMyStore: errorResponse,
     updateMyStore: errorResponse,
     uploadProfilePicture: errorResponse,
@@ -432,6 +433,7 @@ if (convexService.isAvailable()) {
 module.exports = {
   createStore: defaultStoreController.createStore,
   getStoreById: defaultStoreController.getStoreById,
+  getAllStores: defaultStoreController.getAllStores,
   getMyStore: defaultStoreController.getMyStore,
   updateMyStore: defaultStoreController.updateMyStore,
   uploadProfilePicture: defaultStoreController.uploadProfilePicture,

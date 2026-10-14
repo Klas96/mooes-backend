@@ -1,8 +1,8 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { protect } = require('../middleware/auth');
-const { Coupon, StoreGoal, Store, User } = require('../models');
-const couponController = require('../controllers/couponController')({ Coupon, StoreGoal, Store, User });
+// Coupon controller exports methods directly (uses Convex or Sequelize automatically)
+const couponController = require('../controllers/couponController');
 
 const router = express.Router();
 
@@ -60,6 +60,7 @@ router.post('/redeem', protect, [body('code').notEmpty().withMessage('Coupon cod
 router.post('/:couponId/assign', protect, [body('userEmail').isEmail().withMessage('Valid user email is required')], handleValidationErrors, couponController.assignCoupon);
 router.get('/my-coupons', protect, couponController.getUserCoupons);
 router.get('/store/my-coupons', protect, couponController.getStoreCoupons);
+router.get('/store/:storeId', couponController.getStorePublicCoupons); // Public endpoint - must be after /store/my-coupons
 router.post('/:couponId/use', protect, couponController.useCoupon);
 router.delete('/:couponId', protect, couponController.deleteCoupon);
 router.get('/:couponId', protect, couponController.getCoupon);

@@ -1,6 +1,17 @@
 const { Op } = require('sequelize');
 
-function createUserGoalProgressController({ UserGoalProgress, StoreGoal, Store, User, TrainingSession, Coupon }) {
+// Default export for app use
+// Try Convex first, fallback to Sequelize if available
+const convexService = require('../services/convexService');
+
+let defaultUserGoalProgressController;
+
+if (convexService.isAvailable()) {
+  console.log('✅ Using Convex-based user goal progress controller');
+  defaultUserGoalProgressController = require('./userGoalProgressControllerConvex');
+} else {
+  // Fallback to Sequelize version
+  function createUserGoalProgressController({ UserGoalProgress, StoreGoal, Store, User, TrainingSession, Coupon }) {
   // Join a goal (user starts tracking progress)
   const joinGoal = async (req, res) => {
     try {
@@ -355,14 +366,58 @@ function createUserGoalProgressController({ UserGoalProgress, StoreGoal, Store, 
   // Export updateProgressForUser as a helper that can be called from other controllers
   const updateProgressForUserHelper = updateProgressForUser;
 
-  return {
-    joinGoal,
-    getUserProgress,
-    getGoalProgress,
-    markComplete,
-    updateProgressForUser: updateProgressForUserHelper
-  };
+    return {
+      joinGoal,
+      getUserProgress,
+      getGoalProgress,
+      markComplete,
+      updateProgressForUser: updateProgressForUserHelper
+    };
+  }
+
+  // Fallback to Sequelize version
+  const { UserGoalProgress: UserGoalProgressModel, StoreGoal: StoreGoalModel, Store: StoreModel, User: UserModel, TrainingSession: TrainingSessionModel, Coupon: CouponModel } = require('../models');
+  
+  if (UserGoalProgressModel && StoreGoalModel && StoreModel && UserModel && TrainingSessionModel && CouponModel && UserGoalProgressModel.sequelize) {
+    console.log('✅ Creating user goal progress controller with Sequelize models');
+    defaultUserGoalProgressController = createUserGoalProgressController({ 
+      UserGoalProgress: UserGoalProgressModel,
+      StoreGoal: StoreGoalModel,
+      Store: StoreModel,
+      User: UserModel,
+      TrainingSession: TrainingSessionModel,
+      Coupon: CouponModel
+    });
+  } else {
+    console.error('⚠️ ERROR: Cannot create user goal progress controller - neither Convex nor Sequelize available');
+    console.error('⚠️ CONVEX_URL:', process.env.CONVEX_URL ? 'SET' : 'NOT SET');
+    console.error('⚠️ DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+    // Create a dummy controller that returns errors for all methods
+    const errorResponse = (req, res) => {
+      console.error(`❌ ${req.method} ${req.path} called but no database available`);
+      return res.status(503).json({ 
+        success: false,
+        message: 'Database connection not available. Please try again in a few moments.',
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+    };
+    
+    defaultUserGoalProgressController = {
+      joinGoal: errorResponse,
+      getUserProgress: errorResponse,
+      getGoalProgress: errorResponse,
+      markComplete: errorResponse,
+      updateProgressForUser: async () => {}
+    };
+  }
 }
 
-module.exports = createUserGoalProgressController;
+// Export default instance's methods
+module.exports = {
+  joinGoal: defaultUserGoalProgressController.joinGoal,
+  getUserProgress: defaultUserGoalProgressController.getUserProgress,
+  getGoalProgress: defaultUserGoalProgressController.getGoalProgress,
+  markComplete: defaultUserGoalProgressController.markComplete,
+  updateProgressForUser: defaultUserGoalProgressController.updateProgressForUser
+};
 

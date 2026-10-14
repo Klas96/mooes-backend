@@ -13,8 +13,10 @@ export const create = mutation({
     title: v.string(),
     date: v.string(), // ISO date string
     durationMinutes: v.optional(v.number()),
-    notes: v.optional(v.string()),
+    distanceKm: v.optional(v.number()), // Distance in kilometers
     goalReached: v.optional(v.boolean()),
+    googleFitActivityId: v.optional(v.string()),
+    stravaActivityId: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -24,8 +26,10 @@ export const create = mutation({
       title: args.title,
       date: args.date,
       durationMinutes: args.durationMinutes,
-      notes: args.notes,
+      distanceKm: args.distanceKm,
       goalReached: args.goalReached || false,
+      googleFitActivityId: args.googleFitActivityId,
+      stravaActivityId: args.stravaActivityId,
       createdAt: now,
       updatedAt: now,
     });
@@ -43,8 +47,10 @@ export const update = mutation({
     title: v.optional(v.string()),
     date: v.optional(v.string()),
     durationMinutes: v.optional(v.number()),
-    notes: v.optional(v.string()),
+    distanceKm: v.optional(v.number()), // Distance in kilometers
     goalReached: v.optional(v.boolean()),
+    googleFitActivityId: v.optional(v.string()),
+    stravaActivityId: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
@@ -73,4 +79,5 @@ export const remove = mutation({
     return args.id;
   },
 });
+
 

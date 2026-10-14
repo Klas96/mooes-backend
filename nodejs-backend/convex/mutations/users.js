@@ -90,6 +90,13 @@ export const update = mutation({
     resetPasswordToken: v.optional(v.string()),
     resetPasswordExpiry: v.optional(v.number()),
     aiMessageCount: v.optional(v.number()),
+    // Strava integration fields
+    stravaAccessToken: v.optional(v.string()),
+    stravaRefreshToken: v.optional(v.string()),
+    stravaTokenExpiry: v.optional(v.number()),
+    stravaConnected: v.optional(v.boolean()),
+    stravaAthleteId: v.optional(v.number()),
+    lastStravaSync: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;

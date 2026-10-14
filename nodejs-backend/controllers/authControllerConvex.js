@@ -52,8 +52,11 @@ function createAuthControllerConvex({ emailService }) {
 
       const { email, password, firstName, lastName } = req.body;
 
+      // Normalize email (lowercase and trim)
+      const normalizedEmail = email.toLowerCase().trim();
+
       // Check if user already exists
-      const existingUser = await convexService.query('users:getByEmail', { email });
+      const existingUser = await convexService.query('users:getByEmail', { email: normalizedEmail });
       if (existingUser) {
         return res.status(400).json({ 
           error: 'An account with this email already exists. Please try logging in instead.',
@@ -70,7 +73,7 @@ function createAuthControllerConvex({ emailService }) {
 
       // Create user
       const userId = await convexService.mutation('users:create', {
-        email,
+        email: normalizedEmail,
         password: hashedPassword,
         firstName,
         lastName,
@@ -175,6 +178,16 @@ function createAuthControllerConvex({ emailService }) {
       const updatedUser = await convexService.query('users:getById', { id: user._id });
       const formattedUser = formatUser(updatedUser);
 
+      // Check if JWT_SECRET is configured
+      if (!process.env.JWT_SECRET) {
+        console.error('JWT_SECRET is not configured');
+        return res.status(500).json({ 
+          error: 'Server configuration error',
+          code: 'JWT_SECRET_MISSING',
+          message: 'JWT_SECRET environment variable is not set. Please configure it in Vercel environment variables.'
+        });
+      }
+
       // Generate token
       const token = generateToken(formattedUser.id);
 
@@ -270,12 +283,23 @@ function createAuthControllerConvex({ emailService }) {
 
       const { email, password } = req.body;
 
+      // Normalize email (lowercase and trim)
+      const normalizedEmail = email.toLowerCase().trim();
+
       // Find user
-      const user = await convexService.query('users:getByEmail', { email });
+      const user = await convexService.query('users:getByEmail', { email: normalizedEmail });
       if (!user) {
         return res.status(401).json({ 
           error: 'No account found with this email address.',
           code: 'USER_NOT_FOUND'
+        });
+      }
+
+      // Check if user has a password (OAuth users might not have one)
+      if (!user.password) {
+        return res.status(401).json({ 
+          error: 'This account was created with a social login. Please use the social login option instead.',
+          code: 'OAUTH_ACCOUNT'
         });
       }
 
@@ -295,6 +319,16 @@ function createAuthControllerConvex({ emailService }) {
       });
 
       const formattedUser = formatUser(user);
+
+      // Check if JWT_SECRET is configured
+      if (!process.env.JWT_SECRET) {
+        console.error('JWT_SECRET is not configured');
+        return res.status(500).json({ 
+          error: 'Server configuration error',
+          code: 'JWT_SECRET_MISSING',
+          message: 'JWT_SECRET environment variable is not set. Please configure it in Vercel environment variables.'
+        });
+      }
 
       res.json({
         token: generateToken(formattedUser.id),
@@ -319,18 +353,65 @@ function createAuthControllerConvex({ emailService }) {
   // @access  Public
   const googleLogin = async (req, res) => {
     try {
-      const { idToken, email, firstName, lastName, googleId } = req.body;
+      const { idToken, email, displayName, photoUrl } = req.body;
 
-      // Verify Google token (simplified - you should verify properly)
-      // For now, we'll trust the client-provided email
+      if (!idToken) {
+        return res.status(400).json({ 
+          error: 'Google ID token is required.',
+          code: 'MISSING_TOKEN'
+        });
+      }
+
+      // Initialize Google OAuth2 client
+      const client = new OAuth2Client();
+      
+      let payload;
+      try {
+        // Verify the token with Google
+        if (process.env.GOOGLE_CLIENT_ID) {
+          // Support multiple client IDs (comma-separated for debug, release, web)
+          const clientIds = process.env.GOOGLE_CLIENT_ID.split(',').map(id => id.trim());
+          const ticket = await client.verifyIdToken({ 
+            idToken, 
+            audience: clientIds 
+          });
+          payload = ticket.getPayload();
+        } else {
+          // Fallback: use email from request if no GOOGLE_CLIENT_ID configured
+          console.warn('⚠️ GOOGLE_CLIENT_ID not set - using email from request without verification');
+          payload = { email };
+        }
+      } catch (verifyError) {
+        console.error('Google token verification error:', verifyError);
+        return res.status(401).json({ 
+          error: 'Invalid Google token.',
+          code: 'INVALID_TOKEN'
+        });
+      }
+
+      const googleEmail = email || payload.email;
+      
+      if (!googleEmail) {
+        return res.status(400).json({ 
+          error: 'Email is required for Google Sign-In.',
+          code: 'MISSING_EMAIL'
+        });
+      }
+
+      // Extract first and last name from displayName
+      const nameParts = (displayName || googleEmail.split('@')[0] || 'User').split(' ');
+      const firstName = nameParts[0] || 'User';
+      const lastName = nameParts.slice(1).join(' ') || nameParts[0] || 'User';
 
       // Check if user exists
-      let user = await convexService.query('users:getByEmail', { email });
+      let user = await convexService.query('users:getByEmail', { email: googleEmail });
+      let isNewUser = false;
       
       if (!user) {
         // Create new user
+        isNewUser = true;
         const userId = await convexService.mutation('users:create', {
-          email,
+          email: googleEmail,
           password: undefined, // OAuth users don't have passwords
           firstName,
           lastName,
@@ -341,9 +422,10 @@ function createAuthControllerConvex({ emailService }) {
           aiMessageCount: 0,
         });
 
-        // Create profile
+        // Create profile with Google photo if available
         await convexService.mutation('userProfiles:create', {
           userId,
+          profilePicture: photoUrl || undefined,
           genderPreference: 'B',
           isHidden: false,
           locationMode: 'global',
@@ -351,17 +433,49 @@ function createAuthControllerConvex({ emailService }) {
         });
 
         user = await convexService.query('users:getById', { id: userId });
+        console.log('New Google user created:', googleEmail);
       } else {
         // Update last login
         await convexService.mutation('users:update', {
           id: user._id,
           lastLogin: Date.now(),
         });
+        
+        // Ensure email is verified for Google sign-in
+        if (!user.emailVerified) {
+          await convexService.mutation('users:update', {
+            id: user._id,
+            emailVerified: true,
+          });
+        }
+        
+        // Update profile picture if provided and user doesn't have one
+        if (photoUrl) {
+          const profile = await convexService.query('userProfiles:getByUserId', { userId: user._id });
+          if (profile && !profile.profilePicture) {
+            await convexService.mutation('userProfiles:update', {
+              id: profile._id,
+              profilePicture: photoUrl,
+            });
+          }
+        }
+        
         // Refresh user data
         user = await convexService.query('users:getById', { id: user._id });
+        console.log('Existing user logged in with Google:', googleEmail);
       }
 
       const formattedUser = formatUser(user);
+
+      // Check if JWT_SECRET is configured
+      if (!process.env.JWT_SECRET) {
+        console.error('JWT_SECRET is not configured');
+        return res.status(500).json({ 
+          error: 'Server configuration error',
+          code: 'JWT_SECRET_MISSING',
+          message: 'JWT_SECRET environment variable is not set. Please configure it in Vercel environment variables.'
+        });
+      }
 
       res.json({
         token: generateToken(formattedUser.id),
@@ -371,8 +485,11 @@ function createAuthControllerConvex({ emailService }) {
           firstName: formattedUser.firstName,
           lastName: formattedUser.lastName,
           fullName: formattedUser.getFullName(),
-          emailVerified: formattedUser.emailVerified
-        }
+          emailVerified: formattedUser.emailVerified,
+          isPremium: formattedUser.isPremium || false,
+          premiumExpiry: formattedUser.premiumExpiry || null,
+        },
+        isNewUser,
       });
     } catch (error) {
       console.error('Google login error:', error);
@@ -481,13 +598,15 @@ function createAuthControllerConvex({ emailService }) {
     try {
       const { token, newPassword } = req.body;
 
-      // Find user by reset token
-      const allUsers = await convexService.query('users:list', { limit: 1000 });
-      const user = allUsers.find(u => 
-        u.resetPasswordToken === token &&
-        u.resetPasswordExpiry &&
-        Date.now() <= u.resetPasswordExpiry
-      );
+      if (!token || !newPassword) {
+        return res.status(400).json({ 
+          error: 'Token and new password are required.',
+          code: 'MISSING_FIELDS'
+        });
+      }
+
+      // Find user by reset token (query checks expiry)
+      const user = await convexService.query('users:getByResetToken', { token });
 
       if (!user) {
         return res.status(400).json({ 
@@ -499,12 +618,14 @@ function createAuthControllerConvex({ emailService }) {
       // Hash new password
       const hashedPassword = await hashPassword(newPassword);
 
-      // Update password
+      // Update password and clear reset token fields
+      // Note: We set them to empty strings since Convex filters out undefined
+      // The tokens will expire anyway, but clearing them is better practice
       await convexService.mutation('users:update', {
         id: user._id,
         password: hashedPassword,
-        resetPasswordToken: undefined,
-        resetPasswordExpiry: undefined,
+        resetPasswordToken: '',
+        resetPasswordExpiry: 0,
       });
 
       res.json({ message: 'Password reset successfully' });

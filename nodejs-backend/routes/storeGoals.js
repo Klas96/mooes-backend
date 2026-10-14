@@ -1,8 +1,8 @@
 const express = require('express');
 const { body } = require('express-validator');
 const { protect, optionalAuth } = require('../middleware/auth');
-const { Store, StoreGoal, UserGoalProgress, User } = require('../models');
-const storeGoalController = require('../controllers/storeGoalController')({ Store, StoreGoal, UserGoalProgress, User });
+// Store goal controller exports methods directly (uses Convex or Sequelize automatically)
+const storeGoalController = require('../controllers/storeGoalController');
 
 const router = express.Router();
 

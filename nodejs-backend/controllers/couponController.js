@@ -347,6 +347,62 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
     }
   };
 
+  // Get public coupons for a store (unassigned/unused coupons for display)
+  const getStorePublicCoupons = async (req, res) => {
+    try {
+      const { storeId } = req.params;
+
+      if (!storeId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Store ID is required'
+        });
+      }
+
+      // Verify store exists and is active
+      const store = await Store.findOne({
+        where: { id: storeId, isActive: true }
+      });
+
+      if (!store) {
+        return res.status(404).json({
+          success: false,
+          message: 'Store not found'
+        });
+      }
+
+      // Get unassigned and unused coupons for this store
+      const coupons = await Coupon.findAll({
+        where: {
+          storeId: storeId,
+          userId: null, // Unassigned coupons
+          isUsed: false // Unused coupons
+        },
+        include: [
+          {
+            model: StoreGoal,
+            as: 'goal',
+            attributes: ['id', 'title', 'description'],
+            required: false
+          }
+        ],
+        order: [['createdAt', 'DESC']]
+      });
+
+      res.json({
+        success: true,
+        coupons: coupons.map(c => c.toJSON())
+      });
+    } catch (error) {
+      console.error('Error fetching store public coupons:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch coupons',
+        error: error.message
+      });
+    }
+  };
+
   // Delete a coupon (store only)
   const deleteCoupon = async (req, res) => {
     try {
@@ -599,11 +655,72 @@ function createCouponController({ Coupon, StoreGoal, Store, User }) {
     useCoupon,
     createCoupon,
     getStoreCoupons,
+    getStorePublicCoupons,
     deleteCoupon,
     redeemCoupon,
     assignCoupon
   };
 }
 
-module.exports = createCouponController;
+// Default export for app use
+// Try Convex first, fallback to Sequelize if available
+const convexService = require('../services/convexService');
+
+let defaultCouponController;
+if (convexService.isAvailable()) {
+  console.log('✅ Using Convex-based coupon controller');
+  // Use Convex version
+  defaultCouponController = require('./couponControllerConvex');
+} else {
+  // Fallback to Sequelize version
+  const { Coupon: CouponModel, StoreGoal: StoreGoalModel, Store: StoreModel, User: UserModel } = require('../models');
+  
+  if (CouponModel && StoreGoalModel && StoreModel && UserModel && CouponModel.sequelize) {
+    console.log('✅ Creating coupon controller with Sequelize models');
+    defaultCouponController = createCouponController({ 
+      Coupon: CouponModel, 
+      StoreGoal: StoreGoalModel,
+      Store: StoreModel,
+      User: UserModel
+    });
+  } else {
+    console.error('⚠️ ERROR: Cannot create coupon controller - neither Convex nor Sequelize available');
+    console.error('⚠️ CONVEX_URL:', process.env.CONVEX_URL ? 'SET' : 'NOT SET');
+    console.error('⚠️ DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+    // Create a dummy controller that returns errors for all methods
+    const errorResponse = (req, res) => {
+      console.error(`❌ ${req.method} ${req.path} called but no database available`);
+      return res.status(503).json({ 
+        success: false,
+        message: 'Database connection not available. Please try again in a few moments.',
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+    };
+    
+    defaultCouponController = {
+      getUserCoupons: errorResponse,
+      getCoupon: errorResponse,
+      useCoupon: errorResponse,
+      createCoupon: errorResponse,
+      getStoreCoupons: errorResponse,
+      getStorePublicCoupons: errorResponse,
+      deleteCoupon: errorResponse,
+      redeemCoupon: errorResponse,
+      assignCoupon: errorResponse,
+    };
+  }
+}
+
+// Export default instance's methods for router destructuring
+module.exports = {
+  getUserCoupons: defaultCouponController.getUserCoupons,
+  getCoupon: defaultCouponController.getCoupon,
+  useCoupon: defaultCouponController.useCoupon,
+  createCoupon: defaultCouponController.createCoupon,
+  getStoreCoupons: defaultCouponController.getStoreCoupons,
+  getStorePublicCoupons: defaultCouponController.getStorePublicCoupons,
+  deleteCoupon: defaultCouponController.deleteCoupon,
+  redeemCoupon: defaultCouponController.redeemCoupon,
+  assignCoupon: defaultCouponController.assignCoupon,
+};
 

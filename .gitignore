@@ -212,3 +212,5 @@ test-*.js
 # Scripts that may contain secrets
 scripts/*.sh
 !scripts/README.md
+.vercel
+.env*.local

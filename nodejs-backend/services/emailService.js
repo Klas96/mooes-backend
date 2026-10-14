@@ -17,25 +17,18 @@ class EmailService {
     }
 
     // Configure email transporter
-    // For Loopia, try both TLS and STARTTLS if authentication fails
     this.transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST || 'mailcluster.loopia.se',
-      port: parseInt(process.env.EMAIL_PORT || '587', 10),
+      port: process.env.EMAIL_PORT || 587,
       secure: process.env.EMAIL_SECURE === 'true' || false, // true for 465, false for other ports
       auth: {
         user: process.env.EMAIL_USER,
         pass: emailPassword
       },
       tls: {
-        rejectUnauthorized: false,
-        ciphers: 'SSLv3' // Some servers require specific ciphers
-      },
-      debug: process.env.NODE_ENV === 'development', // Enable debug in development
-      logger: process.env.NODE_ENV === 'development' // Enable logger in development
+        rejectUnauthorized: false
+      }
     });
-    
-    // Verify connection on startup (optional, can be commented out if causing issues)
-    // this.transporter.verify().catch(console.error);
 
     console.log('Email service initialized with:', {
       host: process.env.EMAIL_HOST || 'mailcluster.loopia.se',
@@ -55,37 +48,8 @@ class EmailService {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
-  // Reinitialize transporter if environment variables are now available
-  _ensureTransporter() {
-    if (!this.transporter) {
-      const emailPassword = process.env.EMAIL_PASSWORD || process.env.EMAIL_PASS;
-      if (process.env.EMAIL_USER && emailPassword) {
-        // Reinitialize transporter now that env vars are available
-        this.transporter = nodemailer.createTransport({
-          host: process.env.EMAIL_HOST || 'mailcluster.loopia.se',
-          port: process.env.EMAIL_PORT || 587,
-          secure: process.env.EMAIL_SECURE === 'true' || false,
-          auth: {
-            user: process.env.EMAIL_USER,
-            pass: emailPassword
-          },
-          tls: {
-            rejectUnauthorized: false
-          }
-        });
-        console.log('Email service reinitialized with:', {
-          host: process.env.EMAIL_HOST || 'mailcluster.loopia.se',
-          port: process.env.EMAIL_PORT || 587,
-          user: process.env.EMAIL_USER,
-          passwordSet: !!emailPassword
-        });
-      }
-    }
-  }
-
   // Send verification email with code
   async sendVerificationEmail(email, firstName, verificationCode) {
-    this._ensureTransporter();
     if (!this.transporter) {
       console.error('Email transporter not configured. Cannot send verification email.');
       return false;
@@ -141,15 +105,14 @@ class EmailService {
 
   // Send password reset email (for future use)
   async sendPasswordResetEmail(email, firstName, resetToken) {
-    this._ensureTransporter();
     if (!this.transporter) {
       console.error('Email transporter not configured. Cannot send password reset email.');
       return false;
     }
 
     // Create reset URL - can be customized based on your domain
-    const resetUrl = `https://mooves.klasholmgren.se/reset-password?token=${resetToken}`;
-    const appDeepLink = `mooves://reset-password?token=${resetToken}`;
+    const resetUrl = `https://mooves.klasholmgren.se/reset-password?token=${encodeURIComponent(resetToken)}`;
+    const appDeepLink = `mooves://reset-password?token=${encodeURIComponent(resetToken)}`;
 
     const mailOptions = {
       from: process.env.EMAIL_USER || 'noreply@your-app.com',

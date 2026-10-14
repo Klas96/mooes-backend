@@ -258,17 +258,17 @@ const updateMyStore = async (req, res) => {
       isActive
     } = req.body;
 
-    // Only update fields that are provided
+    // Only update fields that are provided (convert null to undefined since Convex doesn't accept null)
     const updateData = { id: store._id };
-    if (storeName !== undefined) updateData.storeName = storeName;
-    if (description !== undefined) updateData.description = description;
-    if (location !== undefined) updateData.location = location;
-    if (website !== undefined) updateData.website = website;
-    if (latitude !== undefined) updateData.latitude = latitude;
-    if (longitude !== undefined) updateData.longitude = longitude;
-    if (logo !== undefined) updateData.logo = logo;
-    if (profilePicture !== undefined) updateData.profilePicture = profilePicture;
-    if (isActive !== undefined) updateData.isActive = isActive;
+    if (storeName !== undefined && storeName !== null) updateData.storeName = storeName;
+    if (description !== undefined && description !== null) updateData.description = description;
+    if (location !== undefined && location !== null) updateData.location = location;
+    if (website !== undefined && website !== null) updateData.website = website;
+    if (latitude !== undefined && latitude !== null) updateData.latitude = latitude;
+    if (longitude !== undefined && longitude !== null) updateData.longitude = longitude;
+    if (logo !== undefined && logo !== null) updateData.logo = logo;
+    if (profilePicture !== undefined && profilePicture !== null) updateData.profilePicture = profilePicture;
+    if (isActive !== undefined && isActive !== null) updateData.isActive = isActive;
 
     await convexService.mutation('stores:update', updateData);
 

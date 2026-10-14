@@ -124,11 +124,142 @@ function dateToISOString(date) {
   return d.toISOString().split('T')[0];
 }
 
+/**
+ * Convert Convex store to format compatible with existing code
+ * @param {object} convexStore - Store object from Convex
+ * @returns {object} Formatted store object
+ */
+function formatStore(convexStore) {
+  if (!convexStore) return null;
+  
+  const formatted = {
+    id: convexStore._id, // Convex uses _id
+    _id: convexStore._id,
+    userId: convexStore.userId,
+    storeName: convexStore.storeName,
+    description: convexStore.description,
+    logo: convexStore.logo,
+    profilePicture: convexStore.profilePicture,
+    location: convexStore.location,
+    website: convexStore.website,
+    latitude: convexStore.latitude,
+    longitude: convexStore.longitude,
+    isActive: convexStore.isActive,
+    createdAt: convexStore.createdAt ? new Date(convexStore.createdAt) : null,
+    updatedAt: convexStore.updatedAt ? new Date(convexStore.updatedAt) : null,
+  };
+  
+  // Include user if present
+  if (convexStore.user) {
+    formatted.user = formatUser(convexStore.user);
+  }
+  
+  // Add toJSON method for compatibility
+  formatted.toJSON = function() {
+    return { ...this };
+  };
+  
+  return formatted;
+}
+
+/**
+ * Convert Convex store goal to format compatible with existing code
+ * @param {object} convexGoal - Store goal object from Convex
+ * @returns {object} Formatted store goal object
+ */
+function formatStoreGoal(convexGoal) {
+  if (!convexGoal) return null;
+  
+  const formatted = {
+    id: convexGoal._id,
+    _id: convexGoal._id,
+    storeId: convexGoal.storeId,
+    title: convexGoal.title,
+    description: convexGoal.description,
+    targetDistanceMeters: convexGoal.targetDistanceMeters,
+    targetDurationMinutes: convexGoal.targetDurationMinutes,
+    startDate: convexGoal.startDate,
+    endDate: convexGoal.endDate,
+    isActive: convexGoal.isActive,
+    maxParticipants: convexGoal.maxParticipants,
+    couponCode: convexGoal.couponCode,
+    couponDescription: convexGoal.couponDescription,
+    couponDiscount: convexGoal.couponDiscount,
+    couponDiscountAmount: convexGoal.couponDiscountAmount,
+    createdAt: convexGoal.createdAt ? new Date(convexGoal.createdAt) : null,
+    updatedAt: convexGoal.updatedAt ? new Date(convexGoal.updatedAt) : null,
+  };
+  
+  // Include store if present
+  if (convexGoal.store) {
+    formatted.store = formatStore(convexGoal.store);
+  }
+  
+  // Add toJSON method for compatibility
+  formatted.toJSON = function() {
+    return { ...this };
+  };
+  
+  return formatted;
+}
+
+/**
+ * Convert Convex coupon to format compatible with existing code
+ * @param {object} convexCoupon - Coupon object from Convex
+ * @returns {object} Formatted coupon object
+ */
+function formatCoupon(convexCoupon) {
+  if (!convexCoupon) return null;
+  
+  const formatted = {
+    id: convexCoupon._id,
+    _id: convexCoupon._id,
+    userId: convexCoupon.userId,
+    goalId: convexCoupon.goalId,
+    storeId: convexCoupon.storeId,
+    code: convexCoupon.code,
+    description: convexCoupon.description,
+    discount: convexCoupon.discount,
+    discountAmount: convexCoupon.discountAmount,
+    isUsed: convexCoupon.isUsed,
+    usedAt: convexCoupon.usedAt ? new Date(convexCoupon.usedAt) : null,
+    expiresAt: convexCoupon.expiresAt ? new Date(convexCoupon.expiresAt) : null,
+    qrCode: convexCoupon.qrCode,
+    createdAt: convexCoupon.createdAt ? new Date(convexCoupon.createdAt) : null,
+    updatedAt: convexCoupon.updatedAt ? new Date(convexCoupon.updatedAt) : null,
+  };
+  
+  // Include store if present
+  if (convexCoupon.store) {
+    formatted.store = formatStore(convexCoupon.store);
+  }
+  
+  // Include goal if present
+  if (convexCoupon.goal) {
+    formatted.goal = formatStoreGoal(convexCoupon.goal);
+  }
+  
+  // Include user if present
+  if (convexCoupon.user) {
+    formatted.user = formatUser(convexCoupon.user);
+  }
+  
+  // Add toJSON method for compatibility
+  formatted.toJSON = function() {
+    return { ...this };
+  };
+  
+  return formatted;
+}
+
 module.exports = {
   hashPassword,
   comparePassword,
   formatUser,
   formatProfile,
+  formatStore,
+  formatStoreGoal,
+  formatCoupon,
   dateToTimestamp,
   dateToISOString,
 };

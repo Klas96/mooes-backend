@@ -18,6 +18,10 @@ const createValidators = [
     .optional({ nullable: true })
     .isInt({ min: 0, max: 2000 })
     .withMessage('Duration must be between 0 and 2000 minutes'),
+  body('distanceKm')
+    .optional({ nullable: true })
+    .isFloat({ min: 0, max: 1000 })
+    .withMessage('Distance must be between 0 and 1000 kilometers'),
   body('notes')
     .optional({ nullable: true })
     .isString()
@@ -44,6 +48,10 @@ const updateValidators = [
     .optional({ nullable: true })
     .isInt({ min: 0, max: 2000 })
     .withMessage('Duration must be between 0 and 2000 minutes'),
+  body('distanceKm')
+    .optional({ nullable: true })
+    .isFloat({ min: 0, max: 1000 })
+    .withMessage('Distance must be between 0 and 1000 kilometers'),
   body('notes')
     .optional({ nullable: true })
     .isString()

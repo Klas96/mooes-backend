@@ -76,3 +76,22 @@ export const list = query({
   },
 });
 
+/**
+ * Get training session by Strava activity ID
+ */
+export const getByStravaActivityId = query({
+  args: {
+    userId: v.id("users"),
+    stravaActivityId: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const allSessions = await ctx.db
+      .query("trainingSessions")
+      .withIndex("userId", (q) => q.eq("userId", args.userId))
+      .collect();
+    
+    return allSessions.find(session => session.stravaActivityId === args.stravaActivityId) || null;
+  },
+});
+
+

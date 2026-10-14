@@ -329,8 +329,38 @@ function createAuthController({ User, UserProfile, emailService }) {
         });
       }
 
-      // Allow login but flag if email is not verified
-      // The frontend will redirect to verification screen
+      // Check if user has a company/store account
+      // Company accounts don't require email verification
+      let isCompanyAccount = false;
+      try {
+        const models = require('../models');
+        if (models.Store) {
+          // Using Sequelize
+          if (models.Store.sequelize && models.Store.sequelize.authenticate) {
+            const store = await models.Store.findOne({ where: { userId: user.id } });
+            isCompanyAccount = !!store;
+          }
+        }
+        // If Sequelize Store check didn't work, try Convex
+        if (!isCompanyAccount && process.env.CONVEX_URL) {
+          try {
+            const convexService = require('../services/convexService');
+            const store = await convexService.query('stores:getByUserId', { userId: user.id.toString() });
+            isCompanyAccount = !!store;
+          } catch (convexError) {
+            console.warn('Convex store check failed:', convexError.message);
+          }
+        }
+      } catch (storeError) {
+        console.warn('Could not check for store account:', storeError.message);
+        // If we can't check, assume regular user
+        isCompanyAccount = false;
+      }
+      
+      // For company accounts, treat them as verified (they're manually created)
+      // Regular users still need email verification
+      const effectiveEmailVerified = isCompanyAccount ? true : user.emailVerified;
+      const requiresVerification = isCompanyAccount ? false : !user.emailVerified;
       
       // Update last login
       user.lastLogin = new Date();
@@ -344,9 +374,10 @@ function createAuthController({ User, UserProfile, emailService }) {
           firstName: user.firstName,
           lastName: user.lastName,
           fullName: user.getFullName(),
-          emailVerified: user.emailVerified
+          emailVerified: effectiveEmailVerified,
+          isCompanyAccount: isCompanyAccount
         },
-        requiresVerification: !user.emailVerified
+        requiresVerification: requiresVerification
       });
     } catch (error) {
       return handleDatabaseError(error, res);

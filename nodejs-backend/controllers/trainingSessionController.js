@@ -1,15 +1,27 @@
 const { validationResult } = require('express-validator');
-const { TrainingSession, UserGoalProgress, StoreGoal } = require('../models');
-const { updateProgressForUser } = require('../routes/userGoalProgress');
 
-// Helper to ensure record belongs to user
-const assertOwnership = (session, userId) => {
-  if (!session || session.userId !== userId) {
-    const error = new Error('Training session not found');
-    error.statusCode = 404;
-    throw error;
-  }
-};
+// Default export for app use
+// Try Convex first, fallback to Sequelize if available
+const convexService = require('../services/convexService');
+
+let defaultTrainingSessionController;
+
+if (convexService.isAvailable()) {
+  console.log('✅ Using Convex-based training session controller');
+  defaultTrainingSessionController = require('./trainingSessionControllerConvex');
+} else {
+  // Fallback to Sequelize version
+  const { TrainingSession, UserGoalProgress, StoreGoal } = require('../models');
+  const { updateProgressForUser } = require('../routes/userGoalProgress');
+
+  // Helper to ensure record belongs to user
+  const assertOwnership = (session, userId) => {
+    if (!session || session.userId !== userId) {
+      const error = new Error('Training session not found');
+      error.statusCode = 404;
+      throw error;
+    }
+  };
 
 // @desc    List training sessions for current user
 // @route   GET /api/training-sessions
@@ -186,11 +198,21 @@ const getQrPayload = async (req, res) => {
   }
 };
 
+  defaultTrainingSessionController = {
+    listSessions,
+    createSession,
+    updateSession,
+    deleteSession,
+    getQrPayload,
+  };
+}
+
+// Export default instance's methods
 module.exports = {
-  listSessions,
-  createSession,
-  updateSession,
-  deleteSession,
-  getQrPayload,
+  listSessions: defaultTrainingSessionController.listSessions,
+  createSession: defaultTrainingSessionController.createSession,
+  updateSession: defaultTrainingSessionController.updateSession,
+  deleteSession: defaultTrainingSessionController.deleteSession,
+  getQrPayload: defaultTrainingSessionController.getQrPayload,
 };
 

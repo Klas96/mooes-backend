@@ -85,6 +85,7 @@ router.put('/my-store', protect, storeController.updateMyStore);
 router.post('/upload-profile-picture', protect, upload.single('profilePicture'), storeController.uploadProfilePicture);
 
 // Public routes (must come after specific routes like /my-store)
+router.get('/', storeController.getAllStores); // Get all stores (must be before /:storeId)
 router.get('/:storeId', storeController.getStoreById);
 
 module.exports = router;

@@ -23,10 +23,18 @@ export default defineSchema({
     resetPasswordToken: v.optional(v.string()),
     resetPasswordExpiry: v.optional(v.number()), // Timestamp in milliseconds
     aiMessageCount: v.optional(v.number()),
+    // Strava integration fields
+    stravaAccessToken: v.optional(v.string()),
+    stravaRefreshToken: v.optional(v.string()),
+    stravaTokenExpiry: v.optional(v.number()), // Timestamp in milliseconds
+    stravaConnected: v.optional(v.boolean()),
+    stravaAthleteId: v.optional(v.number()),
+    lastStravaSync: v.optional(v.number()), // Timestamp in milliseconds
     createdAt: v.number(), // Timestamp in milliseconds
     updatedAt: v.number(), // Timestamp in milliseconds
   })
-    .index("email", ["email"]),
+    .index("email", ["email"])
+    .index("resetPasswordToken", ["resetPasswordToken"]),
 
   // User Profiles table
   userProfiles: defineTable({
@@ -133,8 +141,11 @@ export default defineSchema({
     title: v.string(),
     date: v.string(), // ISO date string
     durationMinutes: v.optional(v.number()),
+    distanceKm: v.optional(v.number()), // Distance in kilometers
     notes: v.optional(v.string()),
     goalReached: v.boolean(),
+    googleFitActivityId: v.optional(v.string()),
+    stravaActivityId: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })

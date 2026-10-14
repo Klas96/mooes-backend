@@ -335,5 +335,57 @@ function createStoreGoalController({ Store, StoreGoal, UserGoalProgress, User })
   };
 }
 
-module.exports = createStoreGoalController;
+// Default export for app use
+// Try Convex first, fallback to Sequelize if available
+const convexService = require('../services/convexService');
+
+let defaultStoreGoalController;
+if (convexService.isAvailable()) {
+  console.log('✅ Using Convex-based store goal controller');
+  // Use Convex version
+  defaultStoreGoalController = require('./storeGoalControllerConvex');
+} else {
+  // Fallback to Sequelize version
+  const { Store: StoreModel, StoreGoal: StoreGoalModel, UserGoalProgress: UserGoalProgressModel, User: UserModel } = require('../models');
+  
+  if (StoreModel && StoreGoalModel && UserGoalProgressModel && UserModel && StoreModel.sequelize) {
+    console.log('✅ Creating store goal controller with Sequelize models');
+    defaultStoreGoalController = createStoreGoalController({ 
+      Store: StoreModel, 
+      StoreGoal: StoreGoalModel, 
+      UserGoalProgress: UserGoalProgressModel,
+      User: UserModel
+    });
+  } else {
+    console.error('⚠️ ERROR: Cannot create store goal controller - neither Convex nor Sequelize available');
+    console.error('⚠️ CONVEX_URL:', process.env.CONVEX_URL ? 'SET' : 'NOT SET');
+    console.error('⚠️ DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET');
+    // Create a dummy controller that returns errors for all methods
+    const errorResponse = (req, res) => {
+      console.error(`❌ ${req.method} ${req.path} called but no database available`);
+      return res.status(503).json({ 
+        success: false,
+        message: 'Database connection not available. Please try again in a few moments.',
+        error: 'DATABASE_CONNECTION_ERROR'
+      });
+    };
+    
+    defaultStoreGoalController = {
+      getActiveGoals: errorResponse,
+      createGoal: errorResponse,
+      getStoreGoals: errorResponse,
+      getGoal: errorResponse,
+      deleteGoal: errorResponse,
+    };
+  }
+}
+
+// Export default instance's methods for router destructuring
+module.exports = {
+  getActiveGoals: defaultStoreGoalController.getActiveGoals,
+  createGoal: defaultStoreGoalController.createGoal,
+  getStoreGoals: defaultStoreGoalController.getStoreGoals,
+  getGoal: defaultStoreGoalController.getGoal,
+  deleteGoal: defaultStoreGoalController.deleteGoal,
+};
 

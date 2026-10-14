@@ -178,6 +178,37 @@ module.exports = (sequelize) => {
         promotions: false
       },
       comment: 'User notification preferences'
+    },
+    // Strava integration fields
+    stravaAccessToken: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Strava OAuth access token'
+    },
+    stravaRefreshToken: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+      comment: 'Strava OAuth refresh token'
+    },
+    stravaTokenExpiry: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Strava token expiration date'
+    },
+    stravaConnected: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      comment: 'Whether Strava is connected'
+    },
+    stravaAthleteId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      comment: 'Strava athlete ID'
+    },
+    lastStravaSync: {
+      type: DataTypes.DATE,
+      allowNull: true,
+      comment: 'Last time activities were synced from Strava'
     }
   }, {
     timestamps: true,

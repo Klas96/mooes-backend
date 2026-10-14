@@ -1,16 +1,17 @@
 const express = require('express');
 const { body } = require('express-validator');
 const { protect } = require('../middleware/auth');
-const { UserGoalProgress, StoreGoal, Store, User, TrainingSession, Coupon } = require('../models');
-const userGoalProgressController = require('../controllers/userGoalProgressController')({ UserGoalProgress, StoreGoal, Store, User, TrainingSession, Coupon });
+// User goal progress controller exports methods directly (uses Convex or Sequelize automatically)
+const userGoalProgressController = require('../controllers/userGoalProgressController');
 
 const router = express.Router();
 
 // Validation for joining a goal
+// Note: goalId can be either UUID (legacy) or Convex ID (starts with letter)
 const joinGoalValidators = [
   body('goalId')
-    .isUUID()
-    .withMessage('goalId must be a valid UUID')
+    .notEmpty()
+    .withMessage('goalId is required')
 ];
 
 // Protected routes

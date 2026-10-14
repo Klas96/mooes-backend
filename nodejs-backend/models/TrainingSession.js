@@ -41,6 +41,16 @@ module.exports = (sequelize) => {
       defaultValue: false,
       allowNull: false,
     },
+    googleFitActivityId: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+      comment: 'Google Fit activity ID if synced from Google Fit'
+    },
+    stravaActivityId: {
+      type: DataTypes.BIGINT,
+      allowNull: true,
+      comment: 'Strava activity ID if synced from Strava'
+    },
   }, {
     tableName: 'TrainingSessions',
     timestamps: true,
